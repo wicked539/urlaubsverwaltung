@@ -1,4 +1,4 @@
-package org.synyx.urlaubsverwaltung.core.sync;
+package org.synyx.urlaubsverwaltung.core.sync.providers;
 
 import org.apache.log4j.Logger;
 
@@ -33,7 +33,7 @@ public class DummyCalendarProviderService implements CalendarProviderService {
 
 
     @Override
-    public void update(Absence absence, String eventId) {
+    public void updateAbsence(Absence absence, String eventId) {
 
         LOG.info(String.format("No calendar provider configured for updating of event: %s, eventId %s", absence,
                 eventId));

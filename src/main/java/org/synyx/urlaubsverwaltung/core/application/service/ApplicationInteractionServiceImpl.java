@@ -16,7 +16,7 @@ import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
 import org.synyx.urlaubsverwaltung.core.application.domain.Comment;
 import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
-import org.synyx.urlaubsverwaltung.core.sync.CalendarProviderService;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMapping;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMappingService;
@@ -133,8 +133,8 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
                 AbsenceType.VACATION);
 
         if (absenceMapping.isPresent()) {
-            calendarProviderService.update(new Absence(application, absenceTimeConfiguration),
-                absenceMapping.get().getEventId());
+            calendarProviderService.updateAbsence(new Absence(application, absenceTimeConfiguration),
+                    absenceMapping.get().getEventId());
         }
 
         return application;

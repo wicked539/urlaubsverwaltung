@@ -1,4 +1,4 @@
-package org.synyx.urlaubsverwaltung.core.sync;
+package org.synyx.urlaubsverwaltung.core.sync.providers.exchange;
 
 import microsoft.exchange.webservices.data.autodiscover.IAutodiscoverRedirectionUrl;
 import microsoft.exchange.webservices.data.core.ExchangeService;
@@ -26,8 +26,11 @@ import org.springframework.stereotype.Service;
 
 import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotCreatedException;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotFoundException;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.condition.ExchangeCalendarCondition;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 
 import java.util.Optional;
 
@@ -162,7 +165,7 @@ public class ExchangeCalendarProviderService implements CalendarProviderService 
 
 
     @Override
-    public void update(Absence absence, String eventId) {
+    public void updateAbsence(Absence absence, String eventId) {
 
         try {
             Appointment appointment = Appointment.bind(exchangeService, new ItemId(eventId));

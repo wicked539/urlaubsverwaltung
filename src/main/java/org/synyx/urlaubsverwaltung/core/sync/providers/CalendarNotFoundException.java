@@ -1,4 +1,4 @@
-package org.synyx.urlaubsverwaltung.core.sync;
+package org.synyx.urlaubsverwaltung.core.sync.providers;
 
 /**
  * Exception thrown if the calendar with a given name can not be found.

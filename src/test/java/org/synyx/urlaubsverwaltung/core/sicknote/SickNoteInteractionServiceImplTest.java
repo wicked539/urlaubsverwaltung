@@ -19,7 +19,7 @@ import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteCommentService;
 import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteStatus;
-import org.synyx.urlaubsverwaltung.core.sync.CalendarProviderService;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMapping;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMappingService;
@@ -129,7 +129,7 @@ public class SickNoteInteractionServiceImplTest {
 
         sickNoteInteractionService.update(sickNote, person);
 
-        Mockito.verify(calendarProviderService).update(Mockito.any(Absence.class), Mockito.anyString());
+        Mockito.verify(calendarProviderService).updateAbsence(Mockito.any(Absence.class), Mockito.anyString());
         Mockito.verify(absenceMappingService).getAbsenceByIdAndType(anyInt(), Mockito.eq(AbsenceType.SICKNOTE));
     }
 
@@ -215,7 +215,7 @@ public class SickNoteInteractionServiceImplTest {
         sickNoteInteractionService.convert(sickNote, applicationForLeave, person);
 
         Mockito.verify(absenceMappingService).getAbsenceByIdAndType(Mockito.anyInt(), Mockito.eq(AbsenceType.SICKNOTE));
-        Mockito.verify(calendarProviderService).update(Mockito.any(Absence.class), Mockito.anyString());
+        Mockito.verify(calendarProviderService).updateAbsence(Mockito.any(Absence.class), Mockito.anyString());
         Mockito.verify(absenceMappingService).delete(Mockito.eq(absenceMapping));
         Mockito.verify(absenceMappingService).create(Mockito.eq(applicationForLeave), Mockito.anyString());
     }
