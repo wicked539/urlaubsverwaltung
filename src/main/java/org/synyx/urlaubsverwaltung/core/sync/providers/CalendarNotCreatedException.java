@@ -1,4 +1,4 @@
-package org.synyx.urlaubsverwaltung.core.sync;
+package org.synyx.urlaubsverwaltung.core.sync.providers;
 
 /**
  * Exception thrown if an error occurs during creation of a calendar.

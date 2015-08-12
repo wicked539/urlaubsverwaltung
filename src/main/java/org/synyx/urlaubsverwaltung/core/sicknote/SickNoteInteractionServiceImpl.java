@@ -17,7 +17,7 @@ import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteCommentService;
 import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteStatus;
-import org.synyx.urlaubsverwaltung.core.sync.CalendarProviderService;
+import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMapping;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMappingService;
@@ -99,7 +99,7 @@ public class SickNoteInteractionServiceImpl implements SickNoteInteractionServic
                 AbsenceType.SICKNOTE);
 
         if (absenceMapping.isPresent()) {
-            calendarProviderService.update(new Absence(sickNote), absenceMapping.get().getEventId());
+            calendarProviderService.updateAbsence(new Absence(sickNote), absenceMapping.get().getEventId());
         }
 
         return sickNote;
@@ -131,7 +131,7 @@ public class SickNoteInteractionServiceImpl implements SickNoteInteractionServic
 
         if (absenceMapping.isPresent()) {
             String eventId = absenceMapping.get().getEventId();
-            calendarProviderService.update(new Absence(application, absenceTimeConfiguration), eventId);
+            calendarProviderService.updateAbsence(new Absence(application, absenceTimeConfiguration), eventId);
             absenceMappingService.delete(absenceMapping.get());
             absenceMappingService.create(application, eventId);
         }

@@ -1,4 +1,4 @@
-package org.synyx.urlaubsverwaltung.core.sync;
+package org.synyx.urlaubsverwaltung.core.sync.providers;
 
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 
@@ -28,7 +28,7 @@ public interface CalendarProviderService {
      * @param  absence  represents the updated absence
      * @param  eventId  id of event to be updated
      */
-    void update(Absence absence, String eventId);
+    void updateAbsence(Absence absence, String eventId);
 
 
     /**
