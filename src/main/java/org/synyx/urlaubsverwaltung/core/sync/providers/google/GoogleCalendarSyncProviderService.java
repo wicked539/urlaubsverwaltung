@@ -28,6 +28,8 @@ import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 
@@ -53,6 +55,8 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
     private String calendarName;
 
+    private String clientSecret;
+
     /**
      * Directory to store user credentials.
      */
@@ -77,11 +81,13 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
     public GoogleCalendarSyncProviderService(MailService mailService,
                                              @Value("${calendar.google.applicationName}") String applicationName,
                                              @Value("${calendar.datastoreDir}") String datastoreDir,
-                                             @Value("${calendar.google.calendar}") String calendarName) {
+                                             @Value("${calendar.google.calendar}") String calendarName,
+                                             @Value("${calendar.google.clientSecret}") String clientSecret) {
 
         this.applicationName = applicationName;
         this.calendarName = calendarName;
         this.dataStoreDir = new java.io.File(System.getProperty("user.home"),  datastoreDir);
+        this.clientSecret = clientSecret;
         this.mailService = mailService;
 
         // initialize the transport
@@ -118,7 +124,7 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
         // load client secrets
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
-                new InputStreamReader(GoogleCalendarSyncProviderService.class.getResourceAsStream("/client_secrets.json")));
+                new InputStreamReader(GoogleCalendarSyncProviderService.class.getResourceAsStream(clientSecret)));
 
         if (clientSecrets.getDetails().getClientId().startsWith("Enter")
                 || clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
@@ -173,9 +179,6 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
     }
 
     private Calendar createCalendar(String calendarName) {
-
-        GoogleApiDebugView.header("Add Calendar");
-
         Calendar entry = new Calendar();
         entry.setSummary(calendarName);
 
@@ -183,7 +186,6 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
             Calendar calendar = client.calendars().insert(entry).execute();
             LOG.info(String.format("New calendar '%s' created.", calendarName));
-            GoogleApiDebugView.display(calendar);
 
             return calendar;
 
@@ -206,12 +208,10 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
             Event eventInCalendar = client.events().insert(calendar.getId(), eventToCommit).execute();
 
-            GoogleApiDebugView.display(eventInCalendar);
-
             LOG.info(String.format("Event %s for '%s' added to google calendar '%s'.", eventInCalendar.getId(),
                     absence.getPerson().getNiceName(), calendar.getSummary()));
 
-            return Optional.of(eventInCalendar.getICalUID());
+            return Optional.of(eventInCalendar.getId());
 
         } catch (IOException ex) {
             LOG.warn("An error occurred while trying to add appointment to Exchange calendar");
@@ -222,13 +222,35 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
     }
 
     private void fillEvent(Absence absence, Event event) {
-        event.setSummary(String.format("Urlaub %s %s", absence.getPerson().getFirstName(),
-                absence.getPerson().getLastName()));
+        event.setSummary(absence.getEventSubject());
 
-        DateTime dateTimeStart = new DateTime(absence.getStartDate());
-        DateTime dateTimeEnd = new DateTime(absence.getEndDate());
-        event.setStart(new EventDateTime().setDateTime(dateTimeStart));
-        event.setEnd(new EventDateTime().setDateTime(dateTimeEnd));
+        EventDateTime startEventDateTime;
+        EventDateTime endEventDateTime;
+
+        if (absence.isAllDay()) {
+
+            // To create an all-day event, you must use setDate() having created DateTime objects using a String
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String startDateStr = dateFormat.format(absence.getStartDate());
+            String endDateStr = dateFormat.format(absence.getEndDate());
+
+            DateTime startDateTime = new DateTime(startDateStr);
+            DateTime endDateTime = new DateTime(endDateStr);
+
+            startEventDateTime = new EventDateTime().setDate(startDateTime);
+            endEventDateTime = new EventDateTime().setDate(endDateTime);
+
+        } else {
+
+            DateTime dateTimeStart = new DateTime(absence.getStartDate());
+            DateTime dateTimeEnd = new DateTime(absence.getEndDate());
+
+            startEventDateTime = new EventDateTime().setDateTime(dateTimeStart);
+            endEventDateTime = new EventDateTime().setDateTime(dateTimeEnd);
+        }
+
+        event.setStart(startEventDateTime);
+        event.setEnd(endEventDateTime);
     }
 
     @Override
@@ -260,7 +282,7 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
                     calendarName));
 
         } catch (Exception ex) {
-            LOG.warn(String.format("Could not delete event %s in exchange calendar '%s'", eventId, calendarName));
+            LOG.warn(String.format("Could not delete event %s in google calendar '%s'", eventId, calendarName));
             mailService.sendCalendarDeleteErrorNotification(calendarName, eventId, ex.getMessage());
         }
     }
