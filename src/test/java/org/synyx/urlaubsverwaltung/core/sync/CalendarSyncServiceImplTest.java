@@ -11,6 +11,7 @@ import org.synyx.urlaubsverwaltung.core.settings.Settings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.providers.exchange.ExchangeCalendarProviderService;
+import org.synyx.urlaubsverwaltung.core.sync.providers.google.GoogleCalendarSyncProviderService;
 
 import java.util.Optional;
 
@@ -35,7 +36,8 @@ public class CalendarSyncServiceImplTest {
         settingsService = Mockito.mock(SettingsService.class);
         exchangeCalendarProviderService = Mockito.mock(ExchangeCalendarProviderService.class);
 
-        calendarSyncService = new CalendarSyncServiceImpl(settingsService, exchangeCalendarProviderService);
+        calendarSyncService = new CalendarSyncServiceImpl(settingsService, exchangeCalendarProviderService,
+                Mockito.mock(GoogleCalendarSyncProviderService.class));
 
         settings = new Settings();
         Mockito.when(settingsService.getSettings()).thenReturn(settings);

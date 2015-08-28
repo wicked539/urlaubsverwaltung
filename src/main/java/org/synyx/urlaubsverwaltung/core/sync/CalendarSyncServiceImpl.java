@@ -11,6 +11,7 @@ import org.synyx.urlaubsverwaltung.core.settings.ExchangeCalendarSettings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.providers.exchange.ExchangeCalendarProviderService;
+import org.synyx.urlaubsverwaltung.core.sync.providers.google.GoogleCalendarSyncProviderService;
 
 import java.util.Optional;
 
@@ -27,13 +28,16 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
 
     private final SettingsService settingsService;
     private final ExchangeCalendarProviderService exchangeCalendarProviderService;
+    private GoogleCalendarSyncProviderService googleCalendarSyncProviderService;
 
     @Autowired
     public CalendarSyncServiceImpl(SettingsService settingsService,
-        ExchangeCalendarProviderService exchangeCalendarProviderService) {
+        ExchangeCalendarProviderService exchangeCalendarProviderService,
+        GoogleCalendarSyncProviderService googleCalendarSyncProviderService) {
 
         this.settingsService = settingsService;
         this.exchangeCalendarProviderService = exchangeCalendarProviderService;
+        this.googleCalendarSyncProviderService = googleCalendarSyncProviderService;
     }
 
     @Override
@@ -41,6 +45,8 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
 
         CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
         ExchangeCalendarSettings exchangeCalendarSettings = calendarSettings.getExchangeCalendarSettings();
+
+        googleCalendarSyncProviderService.addAbsence(absence, calendarSettings);
 
         if (exchangeCalendarSettings.isActive()) {
             return exchangeCalendarProviderService.addAbsence(absence, calendarSettings);

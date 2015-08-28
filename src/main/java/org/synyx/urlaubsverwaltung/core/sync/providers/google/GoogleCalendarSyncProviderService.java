@@ -21,19 +21,23 @@ import com.google.api.services.calendar.model.EventDateTime;
 import org.apache.log4j.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.stereotype.Service;
 
 import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.settings.CalendarSettings;
+import org.synyx.urlaubsverwaltung.core.settings.GoogleCalendarSettings;
+import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
 import org.synyx.urlaubsverwaltung.core.sync.CalendarProviderService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotCreatedException;
 import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotFoundException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import java.security.GeneralSecurityException;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,86 +50,90 @@ import java.util.Optional;
 /**
  * Daniel Hammann - <hammann@synyx.de>.
  */
-@Service("calendarProviderService")
+@Service
 public class GoogleCalendarSyncProviderService implements CalendarProviderService {
 
     private static final Logger LOG = Logger.getLogger(GoogleCalendarSyncProviderService.class);
 
-    /**
-     * Global instance of the JSON factory.
-     */
     private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-    private String calendarName;
-
-    private String clientSecret;
-
-    /**
-     * Directory to store user credentials.
-     */
-    private java.io.File dataStoreDir;
-
-    /**
-     * Global instance of the {@link FileDataStoreFactory}. The best practice is to make it a single globally shared
-     * instance across your application.
-     */
     private FileDataStoreFactory dataStoreFactory;
-
-    /**
-     * Global instance of the HTTP transport.
-     */
     private HttpTransport httpTransport;
     private com.google.api.services.calendar.Calendar client;
+
     private Calendar calendar;
 
-    private MailService mailService;
+    private final MailService mailService;
+    private final SettingsService settingsService;
 
     @Autowired
-    public GoogleCalendarSyncProviderService(MailService mailService,
-        @Value("${calendar.google.applicationName}") String applicationName,
-        @Value("${calendar.datastoreDir}") String datastoreDir,
-        @Value("${calendar.google.calendar}") String calendarName,
-        @Value("${calendar.google.clientSecret}") String clientSecret) {
+    public GoogleCalendarSyncProviderService(MailService mailService, SettingsService settingsService) {
 
-        this.calendarName = calendarName;
-        this.dataStoreDir = new java.io.File(System.getProperty("user.home"), datastoreDir);
-        this.clientSecret = clientSecret;
         this.mailService = mailService;
+        this.settingsService = settingsService;
+    }
+
+    @Override
+    public Optional<String> addAbsence(Absence absence, CalendarSettings calendarSettings) {
+
+        GoogleCalendarSettings googleCalendarSettings = calendarSettings.getGoogleCalendarSettings();
+        connectToGoogle(googleCalendarSettings);
+
+        try {
+            Event eventToCommit = new Event();
+            fillEvent(absence, eventToCommit);
+
+            Event eventInCalendar = client.events().insert(calendar.getId(), eventToCommit).execute();
+
+            LOG.info(String.format("Event %s for '%s' added to google calendar '%s'.", eventInCalendar.getId(),
+                    absence.getPerson().getNiceName(), calendar.getSummary()));
+
+            return Optional.of(eventInCalendar.getId());
+        } catch (IOException ex) {
+            LOG.warn("An error occurred while trying to add appointment to Exchange calendar");
+            mailService.sendCalendarSyncErrorNotification(googleCalendarSettings.getCalendar(), absence, ex.toString());
+        }
+
+        return Optional.empty();
+    }
+
+
+    private void connectToGoogle(GoogleCalendarSettings settings) {
+
+        String dataStoreDirectory = settings.getDataStoreDirectory();
+
+        File dataStore = new File(System.getProperty("user.home"), dataStoreDirectory);
 
         // initialize the transport
         try {
             httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
             // initialize the data store factory
-            dataStoreFactory = new FileDataStoreFactory(dataStoreDir);
+            dataStoreFactory = new FileDataStoreFactory(dataStore);
 
             // authorization
-            Credential credential = authorize();
+            Credential credential = authorize(settings);
 
             // set up global Calendar instance
             client = new com.google.api.services.calendar.Calendar.Builder(httpTransport, JSON_FACTORY, credential)
-                .setApplicationName(applicationName).build();
+                .setApplicationName(settings.getApplication()).build();
 
-            calendar = getCalendar(this.calendarName);
-        } catch (Exception ex) {
-            // NOTE: If an exception is thrown at this point, probably there is an error within the configuration
-
-            LOG.error("No connection could be established to the google calendar.");
-            LOG.error("Please check your configuration!");
-            LOG.error("Shutting down with system exit...");
-
-            System.exit(1);
+            calendar = getCalendar(settings.getCalendar());
+        } catch (GeneralSecurityException | IOException e) {
+            LOG.warn("No connection could be established to Google calendar", e);
         }
     }
+
 
     /**
      * Authorizes the installed application to access user's protected data.
      */
-    private Credential authorize() throws IOException {
+    private Credential authorize(GoogleCalendarSettings settings) throws IOException {
 
         // load client secrets
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
-                new InputStreamReader(GoogleCalendarSyncProviderService.class.getResourceAsStream(clientSecret)));
+                new InputStreamReader(
+                    GoogleCalendarSyncProviderService.class.getResourceAsStream(settings.getClientSecret())));
 
         if (clientSecrets.getDetails().getClientId().startsWith("Enter")
                 || clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
@@ -183,28 +191,6 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
     }
 
 
-    @Override
-    public Optional<String> addAbsence(Absence absence, CalendarSettings calendarSettings) {
-
-        try {
-            Event eventToCommit = new Event();
-            fillEvent(absence, eventToCommit);
-
-            Event eventInCalendar = client.events().insert(calendar.getId(), eventToCommit).execute();
-
-            LOG.info(String.format("Event %s for '%s' added to google calendar '%s'.", eventInCalendar.getId(),
-                    absence.getPerson().getNiceName(), calendar.getSummary()));
-
-            return Optional.of(eventInCalendar.getId());
-        } catch (IOException ex) {
-            LOG.warn("An error occurred while trying to add appointment to Exchange calendar");
-            mailService.sendCalendarSyncErrorNotification(calendarName, absence, ex.toString());
-        }
-
-        return Optional.empty();
-    }
-
-
     private void fillEvent(Absence absence, Event event) {
 
         event.setSummary(absence.getEventSubject());
@@ -239,15 +225,20 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
     @Override
     public void updateAbsence(Absence absence, String eventId, CalendarSettings calendarSettings) {
 
+        GoogleCalendarSettings googleCalendarSettings = calendarSettings.getGoogleCalendarSettings();
+        connectToGoogle(googleCalendarSettings);
+
+        String calendarName = googleCalendarSettings.getCalendar();
+
         try {
             // gather exiting event
-            Event event = client.events().get(calendar.getId(), eventId).execute();
+            Event event = client.events().get(this.calendar.getId(), eventId).execute();
 
             // update event with absence
             fillEvent(absence, event);
 
             // sync event to calendar
-            client.events().patch(calendar.getId(), eventId, event).execute();
+            client.events().patch(this.calendar.getId(), eventId, event).execute();
 
             LOG.info(String.format("Event %s has been updated in google calendar '%s'.", eventId, calendarName));
         } catch (Exception ex) {
@@ -259,6 +250,11 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
     @Override
     public void deleteAbsence(String eventId, CalendarSettings calendarSettings) {
+
+        GoogleCalendarSettings googleCalendarSettings = calendarSettings.getGoogleCalendarSettings();
+        connectToGoogle(googleCalendarSettings);
+
+        String calendarName = googleCalendarSettings.getCalendar();
 
         try {
             client.events().delete(calendar.getId(), eventId).execute();
