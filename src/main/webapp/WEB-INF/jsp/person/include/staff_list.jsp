@@ -26,39 +26,59 @@
             }
         });
 
+        var options = {
+            valueNames: [ 'firstname', 'lastname' ]
+        };
+
+        new List('users', options);
+
     });
 </script>
 
-<table cellspacing="0" class="list-table selectable-table sortable tablesorter print--only-landscape">
+
+<div id="users">
+
+    <form class="form-inline">
+        <div class="form-group">
+            <div class="input-group search-field">
+                <%-- NOTE: class 'search' is needed for list.js --%>
+                <input type="text" class="search form-control" placeholder="<spring:message code='action.search'/>" />
+                <span class="input-group-addon"><i class="fa fa-search"></i></span>
+            </div>
+        </div>
+    </form>
+
+    <table cellspacing="0" class="list-table selectable-table sortable tablesorter print--only-landscape">
     <thead class="hidden-xs hidden-sm">
     <tr>
         <th><%-- placeholder to ensure correct number of th --%></th>
         <th class="sortable-field"><spring:message code="person.data.firstName" /></th>
         <th class="sortable-field"><spring:message code="person.data.lastName" /></th>
-        <th class="sortable-field is-centered"><spring:message code='person.account.entitlement.year' /></th>
-        <th class="sortable-field is-centered"><spring:message code='person.account.entitlement.actual' /></th>
-        <th class="sortable-field is-centered"><spring:message code='person.account.entitlement.remaining' /></th>
-        <th class="sortable-field is-centered"><spring:message code="person.account.vacationDays.left"/></th>
+        <th class="sortable-field is-centered"><spring:message code='persons.account.vacation.entitlement.year' /></th>
+        <th class="sortable-field is-centered"><spring:message code='persons.account.vacation.entitlement.actual' /></th>
+        <th class="sortable-field is-centered"><spring:message code='persons.account.vacation.entitlement.remaining' /></th>
+        <th class="sortable-field is-centered"><spring:message code="persons.account.vacation.vacationDaysLeft"/></th>
         <sec:authorize access="hasRole('OFFICE')">
             <th><%-- placeholder to ensure correct number of th --%></th>
         </sec:authorize>    
     </tr>
     </thead>
-    <tbody>
+    <%-- NOTE: class 'list' is needed for list.js --%>
+    <tbody class="list">
     <c:forEach items="${persons}" var="person" varStatus="loopStatus">
         <tr onclick="navigate('${URL_PREFIX}/staff/${person.id}/overview');">
             <td class="is-centered">
                 <img class="img-circle hidden-print" src="<c:out value='${gravatarUrls[person]}?d=mm&s=60'/>"/>
             </td>
-            <td><c:out value="${person.firstName}"/></td>
-            <td><c:out value="${person.lastName}"/></td>
+            <td class="firstname"><c:out value="${person.firstName}"/></td>
+            <td class="lastname"><c:out value="${person.lastName}"/></td>
             <td class="is-centered hidden-xs hidden-sm">
                 <c:choose>
                     <c:when test="${accounts[person] != null}">
                         <uv:number number="${accounts[person].annualVacationDays}"/>
                     </c:when>
                     <c:otherwise>
-                        <spring:message code='person.account.noInformation'/>
+                        <spring:message code='person.account.vacation.noInformation'/>
                     </c:otherwise>
                 </c:choose>
             </td>
@@ -68,7 +88,7 @@
                         <uv:number number="${accounts[person].vacationDays}"/>
                     </c:when>
                     <c:otherwise>
-                        <spring:message code='person.account.noInformation'/>
+                        <spring:message code='person.account.vacation.noInformation'/>
                     </c:otherwise>
                 </c:choose>
             </td>
@@ -78,7 +98,7 @@
                         <uv:number number="${accounts[person].remainingVacationDays}"/>
                     </c:when>
                     <c:otherwise>
-                        <spring:message code='person.account.noInformation'/>
+                        <spring:message code='person.account.vacation.noInformation'/>
                     </c:otherwise>
                 </c:choose>
             </td>
@@ -98,7 +118,7 @@
                         </c:choose>
                     </c:when>
                     <c:otherwise>
-                        <spring:message code='person.account.noInformation'/>
+                        <spring:message code='person.account.vacation.noInformation'/>
                     </c:otherwise>
                 </c:choose>
             </td>
@@ -114,4 +134,4 @@
     </c:forEach>
     </tbody>
 </table>
-
+</div>

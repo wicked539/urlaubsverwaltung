@@ -23,16 +23,14 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import org.springframework.context.annotation.Conditional;
-
 import org.springframework.stereotype.Service;
 
 import org.synyx.urlaubsverwaltung.core.mail.MailService;
+import org.synyx.urlaubsverwaltung.core.settings.CalendarSettings;
+import org.synyx.urlaubsverwaltung.core.sync.CalendarProviderService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
-import org.synyx.urlaubsverwaltung.core.sync.condition.GoogleCalendarCondition;
 import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotCreatedException;
 import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarNotFoundException;
-import org.synyx.urlaubsverwaltung.core.sync.providers.CalendarProviderService;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,7 +47,6 @@ import java.util.Optional;
  * Daniel Hammann - <hammann@synyx.de>.
  */
 @Service("calendarProviderService")
-@Conditional(GoogleCalendarCondition.class)
 public class GoogleCalendarSyncProviderService implements CalendarProviderService {
 
     private static final Logger LOG = Logger.getLogger(GoogleCalendarSyncProviderService.class);
@@ -187,7 +184,7 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
 
     @Override
-    public Optional<String> addAbsence(Absence absence) {
+    public Optional<String> addAbsence(Absence absence, CalendarSettings calendarSettings) {
 
         try {
             Event eventToCommit = new Event();
@@ -240,7 +237,7 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
 
     @Override
-    public void updateAbsence(Absence absence, String eventId) {
+    public void updateAbsence(Absence absence, String eventId, CalendarSettings calendarSettings) {
 
         try {
             // gather exiting event
@@ -261,7 +258,7 @@ public class GoogleCalendarSyncProviderService implements CalendarProviderServic
 
 
     @Override
-    public void deleteAbsence(String eventId) {
+    public void deleteAbsence(String eventId, CalendarSettings calendarSettings) {
 
         try {
             client.events().delete(calendar.getId(), eventId).execute();

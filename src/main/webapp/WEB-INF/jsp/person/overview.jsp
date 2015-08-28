@@ -95,11 +95,11 @@
                     <span class="box-text">
                         <c:choose>
                             <c:when test="${account != null}">
-                                <spring:message code="overview.vacation.entitlement" arguments="${account.vacationDays}" />
-                                <spring:message code="overview.vacation.entitlement.remaining" arguments="${account.remainingVacationDays}" />
+                                <spring:message code="person.account.vacation.entitlement" arguments="${account.vacationDays}" />
+                                <spring:message code="person.account.vacation.entitlement.remaining" arguments="${account.remainingVacationDays}" />
                             </c:when>
                             <c:otherwise>
-                                <spring:message code='person.account.noInformation'/>
+                                <spring:message code='person.account.vacation.noInformation'/>
                             </c:otherwise>
                         </c:choose>
                     </span>
@@ -112,18 +112,18 @@
                     <span class="box-text">
                         <c:choose>
                             <c:when test="${account != null}">
-                                <spring:message code="overview.vacation.left" arguments="${vacationDaysLeft.vacationDays}" />
+                                <spring:message code="person.account.vacation.left" arguments="${vacationDaysLeft.vacationDays}" />
                                 <c:choose>
                                     <c:when test="${beforeApril}">
-                                        <spring:message code="overview.vacation.left.remaining" arguments="${vacationDaysLeft.remainingVacationDays}" />
+                                        <spring:message code="person.account.vacation.left.remaining" arguments="${vacationDaysLeft.remainingVacationDays}" />
                                     </c:when>
                                     <c:otherwise>
-                                        <spring:message code="overview.vacation.left.remaining" arguments="${vacationDaysLeft.remainingVacationDaysNotExpiring}" />
+                                        <spring:message code="person.account.vacation.left.remaining" arguments="${vacationDaysLeft.remainingVacationDaysNotExpiring}" />
                                     </c:otherwise>
                                 </c:choose>
                             </c:when>
                             <c:otherwise>
-                                <spring:message code='person.account.noInformation'/>
+                                <spring:message code='person.account.vacation.noInformation'/>
                             </c:otherwise>
                         </c:choose>
                     </span>
@@ -179,7 +179,9 @@
                         holidayService.fetchPublic   ( startDate.year() ),
                         holidayService.fetchPublic   ( endDate.year() ),
                         holidayService.fetchPersonal ( startDate.year() ),
-                        holidayService.fetchPersonal ( endDate.year() )
+                        holidayService.fetchPersonal ( endDate.year() ),
+                        holidayService.fetchSickDays ( startDate.year() ),
+                        holidayService.fetchSickDays ( endDate.year() )
                     ).always(function() {
                         Urlaubsverwaltung.Calendar.init(holidayService, date);
                     });
@@ -207,6 +209,13 @@
 
         <div class="row">
             <div class="col-xs-12">
+                <hr/>
+                <div id="datepicker"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-12">
 
                 <div class="header">
 
@@ -231,12 +240,6 @@
                     </legend>
 
                 </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-xs-12">
-                <div id="datepicker"></div>
             </div>
         </div>
 

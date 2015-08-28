@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 
 import org.springframework.ui.Model;
 
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +19,7 @@ import org.synyx.urlaubsverwaltung.core.account.domain.Account;
 import org.synyx.urlaubsverwaltung.core.account.domain.VacationDaysLeft;
 import org.synyx.urlaubsverwaltung.core.account.service.AccountService;
 import org.synyx.urlaubsverwaltung.core.account.service.VacationDaysService;
+import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTimeService;
 import org.synyx.urlaubsverwaltung.core.department.DepartmentService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
@@ -26,6 +28,8 @@ import org.synyx.urlaubsverwaltung.security.Role;
 import org.synyx.urlaubsverwaltung.security.SecurityRules;
 import org.synyx.urlaubsverwaltung.security.SessionService;
 import org.synyx.urlaubsverwaltung.web.ControllerConstants;
+import org.synyx.urlaubsverwaltung.web.department.DepartmentConstants;
+import org.synyx.urlaubsverwaltung.web.util.GravatarUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,32 +59,93 @@ public class PersonController {
     private DepartmentService departmentService;
 
     @Autowired
+    private WorkingTimeService workingTimeService;
+
+    @Autowired
     private SessionService sessionService;
 
-    @PreAuthorize(SecurityRules.IS_PRIVILEGED_USER)
-    @RequestMapping(value = "/staff/inactive", method = RequestMethod.GET)
-    public String showInactiveStaff() {
+    @RequestMapping(value = "/staff/{personId}", method = RequestMethod.GET)
+    public String showStaffInformation(@PathVariable("personId") Integer personId,
+        @RequestParam(value = ControllerConstants.YEAR_ATTRIBUTE, required = false) Integer requestedYear,
+        Model model) {
 
-        return "redirect:/web/staff/inactive?year=" + DateMidnight.now().getYear();
+        Optional<Person> optionalPerson = personService.getPersonByID(personId);
+
+        if (optionalPerson.isPresent()) {
+            Person person = optionalPerson.get();
+            Person signedInUser = sessionService.getSignedInUser();
+
+            boolean isOwnDataPage = person.getId().equals(signedInUser.getId());
+            boolean isOffice = signedInUser.hasRole(Role.OFFICE);
+            boolean isBoss = signedInUser.hasRole(Role.BOSS);
+            boolean isDepartmentHead = departmentService.isDepartmentHeadOfPerson(signedInUser, person);
+
+            if (!isOwnDataPage && !isOffice && !isBoss && !isDepartmentHead) {
+                return ControllerConstants.ERROR_JSP;
+            }
+
+            Integer year = requestedYear == null ? DateMidnight.now().getYear() : requestedYear;
+
+            model.addAttribute(ControllerConstants.YEAR_ATTRIBUTE, year);
+            model.addAttribute(PersonConstants.PERSON_ATTRIBUTE, person);
+            model.addAttribute(PersonConstants.GRAVATAR_URL_ATTRIBUTE, GravatarUtil.createImgURL(person.getEmail()));
+
+            model.addAttribute(DepartmentConstants.DEPARTMENTS_ATTRIBUTE,
+                departmentService.getAssignedDepartmentsOfMember(person));
+
+            model.addAttribute("workingTimes", workingTimeService.getByPerson(person));
+
+            Optional<Account> account = accountService.getHolidaysAccount(year, person);
+
+            if (account.isPresent()) {
+                model.addAttribute("vacationDaysLeft", vacationDaysService.getVacationDaysLeft(account.get()));
+                model.addAttribute("account", account.get());
+                model.addAttribute(PersonConstants.BEFORE_APRIL_ATTRIBUTE, DateUtil.isBeforeApril(DateMidnight.now()));
+            }
+
+            return PersonConstants.PERSON_DETAIL_JSP;
+        }
+
+        return ControllerConstants.ERROR_JSP;
     }
 
 
     @PreAuthorize(SecurityRules.IS_PRIVILEGED_USER)
     @RequestMapping(value = "/staff", method = RequestMethod.GET)
-    public String showActiveStaff() {
+    public String showStaff(@RequestParam(value = "active", required = true) Boolean active,
+        @RequestParam(value = ControllerConstants.YEAR_ATTRIBUTE, required = false) Integer requestedYear,
+        Model model) {
 
-        return "redirect:/web/staff?year=" + DateMidnight.now().getYear();
-    }
+        Integer year = requestedYear == null ? DateMidnight.now().getYear() : requestedYear;
 
+        List<Person> persons;
 
-    @PreAuthorize(SecurityRules.IS_PRIVILEGED_USER)
-    @RequestMapping(value = "/staff/inactive", params = ControllerConstants.YEAR_ATTRIBUTE, method = RequestMethod.GET)
-    public String showInactiveStaffByYear(@RequestParam(ControllerConstants.YEAR_ATTRIBUTE) int year, Model model) {
+        if (active) {
+            persons = getRelevantActivePersons();
+        } else {
+            persons = getRelevantInactivePersons();
+        }
 
-        List<Person> persons = getRelevantInactivePersons();
         prepareStaffView(persons, year, model);
 
         return PersonConstants.STAFF_JSP;
+    }
+
+
+    private List<Person> getRelevantActivePersons() {
+
+        List<Person> persons = personService.getActivePersons();
+
+        // NOTE: If the signed in user is only department head, he wants to see only the persons of his departments
+        if (sessionService.getSignedInUser().hasRole(Role.DEPARTMENT_HEAD)) {
+            List<Person> members = departmentService.getManagedMembersOfDepartmentHead(
+                    sessionService.getSignedInUser());
+
+            // NOTE: Only persons without inactive role are relevant
+            return members.stream().filter(person -> !person.hasRole(Role.INACTIVE)).collect(Collectors.toList());
+        }
+
+        return persons;
     }
 
 
@@ -123,35 +188,7 @@ public class PersonController {
         model.addAttribute("accounts", accounts);
         model.addAttribute("vacationDaysLeftMap", vacationDaysLeftMap);
         model.addAttribute(PersonConstants.BEFORE_APRIL_ATTRIBUTE, DateUtil.isBeforeApril(DateMidnight.now()));
-        model.addAttribute(ControllerConstants.YEAR_ATTRIBUTE, DateMidnight.now().getYear());
+        model.addAttribute(ControllerConstants.YEAR_ATTRIBUTE, year);
         model.addAttribute("now", DateMidnight.now());
-    }
-
-
-    @PreAuthorize(SecurityRules.IS_PRIVILEGED_USER)
-    @RequestMapping(value = "/staff", params = ControllerConstants.YEAR_ATTRIBUTE, method = RequestMethod.GET)
-    public String showActiveStaffByYear(@RequestParam(ControllerConstants.YEAR_ATTRIBUTE) int year, Model model) {
-
-        List<Person> persons = getRelevantActivePersons();
-        prepareStaffView(persons, year, model);
-
-        return PersonConstants.STAFF_JSP;
-    }
-
-
-    private List<Person> getRelevantActivePersons() {
-
-        List<Person> persons = personService.getActivePersons();
-
-        // NOTE: If the signed in user is only department head, he wants to see only the persons of his departments
-        if (sessionService.getSignedInUser().hasRole(Role.DEPARTMENT_HEAD)) {
-            List<Person> members = departmentService.getManagedMembersOfDepartmentHead(
-                    sessionService.getSignedInUser());
-
-            // NOTE: Only persons without inactive role are relevant
-            return members.stream().filter(person -> !person.hasRole(Role.INACTIVE)).collect(Collectors.toList());
-        }
-
-        return persons;
     }
 }
