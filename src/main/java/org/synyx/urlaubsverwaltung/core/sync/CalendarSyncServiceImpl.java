@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.synyx.urlaubsverwaltung.core.settings.CalendarSettings;
-import org.synyx.urlaubsverwaltung.core.settings.ExchangeCalendarSettings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.providers.exchange.ExchangeCalendarProviderService;
@@ -44,11 +43,12 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
     public Optional<String> addAbsence(Absence absence) {
 
         CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
-        ExchangeCalendarSettings exchangeCalendarSettings = calendarSettings.getExchangeCalendarSettings();
 
-        googleCalendarSyncProviderService.addAbsence(absence, calendarSettings);
+        if (calendarSettings.getGoogleCalendarSettings().isActive()) {
+            return googleCalendarSyncProviderService.addAbsence(absence, calendarSettings);
+        }
 
-        if (exchangeCalendarSettings.isActive()) {
+        if (calendarSettings.getExchangeCalendarSettings().isActive()) {
             return exchangeCalendarProviderService.addAbsence(absence, calendarSettings);
         }
 
@@ -62,9 +62,14 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
     public void update(Absence absence, String eventId) {
 
         CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
-        ExchangeCalendarSettings exchangeCalendarSettings = calendarSettings.getExchangeCalendarSettings();
 
-        if (exchangeCalendarSettings.isActive()) {
+        if (calendarSettings.getGoogleCalendarSettings().isActive()) {
+            googleCalendarSyncProviderService.updateAbsence(absence, eventId, calendarSettings);
+
+            return;
+        }
+
+        if (calendarSettings.getExchangeCalendarSettings().isActive()) {
             exchangeCalendarProviderService.updateAbsence(absence, eventId, calendarSettings);
 
             return;
@@ -78,9 +83,14 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
     public void deleteAbsence(String eventId) {
 
         CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
-        ExchangeCalendarSettings exchangeCalendarSettings = calendarSettings.getExchangeCalendarSettings();
 
-        if (exchangeCalendarSettings.isActive()) {
+        if (calendarSettings.getGoogleCalendarSettings().isActive()) {
+            googleCalendarSyncProviderService.deleteAbsence(eventId, calendarSettings);
+
+            return;
+        }
+
+        if (calendarSettings.getExchangeCalendarSettings().isActive()) {
             exchangeCalendarProviderService.deleteAbsence(eventId, calendarSettings);
 
             return;
