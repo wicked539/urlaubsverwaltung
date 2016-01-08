@@ -1,10 +1,9 @@
 package org.synyx.urlaubsverwaltung.core.application.service;
 
-import junit.framework.Assert;
-
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeConstants;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -15,14 +14,15 @@ import org.synyx.urlaubsverwaltung.core.account.service.AccountInteractionServic
 import org.synyx.urlaubsverwaltung.core.account.service.AccountService;
 import org.synyx.urlaubsverwaltung.core.account.service.VacationDaysService;
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.calendar.PublicHolidaysService;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
 import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTime;
 import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTimeService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.settings.Settings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
 import java.io.IOException;
 
@@ -77,8 +77,7 @@ public class CalculationServiceTest {
     @Test
     public void testCheckApplication() {
 
-        Person person = new Person();
-        person.setLoginName("horscht");
+        Person person = TestDataCreator.createPerson("horscht");
 
         Application applicationForLeaveToCheck = new Application();
         applicationForLeaveToCheck.setStartDate(new DateMidnight(2012, DateTimeConstants.AUGUST, 20));

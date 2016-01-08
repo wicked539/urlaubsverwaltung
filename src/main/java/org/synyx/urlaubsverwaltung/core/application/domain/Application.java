@@ -1,13 +1,18 @@
 package org.synyx.urlaubsverwaltung.core.application.domain;
 
-import com.google.common.base.MoreObjects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.Period;
 import org.synyx.urlaubsverwaltung.core.person.Person;
+
+import java.math.BigDecimal;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -27,7 +32,6 @@ import javax.persistence.Temporal;
  * @author  Johannes Reuter
  * @author  Aljona Murygina
  */
-
 @Entity
 public class Application extends AbstractPersistable<Integer> {
 
@@ -105,6 +109,9 @@ public class Application extends AbstractPersistable<Integer> {
 
     // team informed about holidays?
     private boolean teamInformed;
+
+    // How many hours of overtime are used for this application for leave?
+    private BigDecimal hours;
 
     public String getAddress() {
 
@@ -384,7 +391,7 @@ public class Application extends AbstractPersistable<Integer> {
 
     public void setRemindDate(DateMidnight remindDate) {
 
-        if (startDate == null) {
+        if (remindDate == null) {
             this.remindDate = null;
         } else {
             this.remindDate = remindDate.toDate();
@@ -404,33 +411,44 @@ public class Application extends AbstractPersistable<Integer> {
     }
 
 
+    public BigDecimal getHours() {
+
+        return hours;
+    }
+
+
+    public void setHours(BigDecimal hours) {
+
+        this.hours = hours;
+    }
+
+
     @Override
     public String toString() {
 
-        MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
-
-        toStringHelper.add("id", getId());
-        toStringHelper.add("startDate", getStartDate());
-        toStringHelper.add("endDate", getEndDate());
-        toStringHelper.add("vacationType", getVacationType());
-        toStringHelper.add("dayLength", getDayLength());
+        ToStringBuilder toStringBuilder = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
+        toStringBuilder.append("id", getId());
+        toStringBuilder.append("startDate", getStartDate());
+        toStringBuilder.append("endDate", getEndDate());
+        toStringBuilder.append("vacationType", getVacationType());
+        toStringBuilder.append("dayLength", getDayLength());
 
         if (getPerson() != null && getApplier() != null && getPerson().equals(getApplier())) {
-            toStringHelper.add("person", getPerson());
+            toStringBuilder.append("person", getPerson());
         } else {
-            toStringHelper.add("person", getPerson());
-            toStringHelper.add("applier", getApplier());
+            toStringBuilder.append("person", getPerson());
+            toStringBuilder.append("applier", getApplier());
         }
 
         if (getBoss() != null) {
-            toStringHelper.add("boss", getBoss());
+            toStringBuilder.append("boss", getBoss());
         }
 
         if (getCanceller() != null) {
-            toStringHelper.add("canceller", getCanceller());
+            toStringBuilder.append("canceller", getCanceller());
         }
 
-        return toStringHelper.toString();
+        return toStringBuilder.toString();
     }
 
 
@@ -444,5 +462,16 @@ public class Application extends AbstractPersistable<Integer> {
     public boolean hasStatus(ApplicationStatus status) {
 
         return getStatus() == status;
+    }
+
+
+    /**
+     * Return period of time of the application for leave.
+     *
+     * @return  period of time, never {@code null}
+     */
+    public Period getPeriod() {
+
+        return new Period(getStartDate(), getEndDate(), getDayLength());
     }
 }

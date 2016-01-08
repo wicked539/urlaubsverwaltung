@@ -26,11 +26,9 @@ import org.synyx.urlaubsverwaltung.security.SecurityRules;
 import org.synyx.urlaubsverwaltung.web.ControllerConstants;
 import org.synyx.urlaubsverwaltung.web.PersonPropertyEditor;
 import org.synyx.urlaubsverwaltung.web.person.PersonConstants;
-import org.synyx.urlaubsverwaltung.web.validator.DepartmentValidator;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,6 +37,7 @@ import java.util.stream.Collectors;
  * @author  Daniel Hammann - <hammann@synyx.de>
  */
 @Controller
+@RequestMapping(value = "/web")
 public class DepartmentController {
 
     @Autowired
@@ -74,11 +73,9 @@ public class DepartmentController {
     public String newDepartmentForm(Model model) {
 
         List<Person> persons = getPersons();
-        Map<Person, String> gravatarUrls = PersonConstants.getGravatarURLs(persons);
 
         model.addAttribute(DepartmentConstants.DEPARTMENT_ATTRIBUTE, new Department());
         model.addAttribute(PersonConstants.PERSONS_ATTRIBUTE, persons);
-        model.addAttribute(PersonConstants.GRAVATAR_URLS_ATTRIBUTE, gravatarUrls);
 
         return DepartmentConstants.DEPARTMENT_FORM_JSP;
     }
@@ -105,11 +102,9 @@ public class DepartmentController {
 
         if (errors.hasErrors()) {
             List<Person> persons = getPersons();
-            Map<Person, String> gravatarUrls = PersonConstants.getGravatarURLs(persons);
 
             model.addAttribute(DepartmentConstants.DEPARTMENT_ATTRIBUTE, department);
             model.addAttribute(PersonConstants.PERSONS_ATTRIBUTE, persons);
-            model.addAttribute(PersonConstants.GRAVATAR_URLS_ATTRIBUTE, gravatarUrls);
 
             return DepartmentConstants.DEPARTMENT_FORM_JSP;
         }
@@ -124,37 +119,30 @@ public class DepartmentController {
 
     @PreAuthorize(SecurityRules.IS_OFFICE)
     @RequestMapping(value = "/department/{departmentId}/edit", method = RequestMethod.GET)
-    public String editDepartment(@PathVariable("departmentId") Integer departmentId, Model model) {
+    public String editDepartment(@PathVariable("departmentId") Integer departmentId, Model model)
+        throws UnknownDepartmentException {
 
-        Optional<Department> optionalDepartment = departmentService.getDepartmentById(departmentId);
+        Department department = departmentService.getDepartmentById(departmentId).orElseThrow(() ->
+                    new UnknownDepartmentException(departmentId));
 
-        if (!optionalDepartment.isPresent()) {
-            return ControllerConstants.ERROR_JSP;
-        }
-
-        Department department = optionalDepartment.get();
         List<Person> persons = getPersons();
-        Map<Person, String> gravatarUrls = PersonConstants.getGravatarURLs(persons);
 
         model.addAttribute(DepartmentConstants.DEPARTMENT_ATTRIBUTE, department);
         model.addAttribute(PersonConstants.PERSONS_ATTRIBUTE, persons);
-        model.addAttribute(PersonConstants.GRAVATAR_URLS_ATTRIBUTE, gravatarUrls);
 
         return DepartmentConstants.DEPARTMENT_FORM_JSP;
     }
 
 
     @PreAuthorize(SecurityRules.IS_OFFICE)
-    @RequestMapping(value = "/department/{departmentId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/department/{departmentId}", method = RequestMethod.POST)
     public String updateDepartment(@PathVariable("departmentId") Integer departmentId,
         @ModelAttribute(DepartmentConstants.DEPARTMENT_ATTRIBUTE) Department department, Errors errors, Model model,
-        RedirectAttributes redirectAttributes) {
+        RedirectAttributes redirectAttributes) throws UnknownDepartmentException {
 
-        Optional<Department> departmentToUpdate = departmentService.getDepartmentById(departmentId);
-
-        if (!departmentToUpdate.isPresent()) {
-            return ControllerConstants.ERROR_JSP;
-        }
+        // Check if department exists
+        departmentService.getDepartmentById(departmentId).orElseThrow(() ->
+                new UnknownDepartmentException(departmentId));
 
         validator.validate(department, errors);
 
@@ -164,11 +152,9 @@ public class DepartmentController {
 
         if (errors.hasErrors()) {
             List<Person> persons = getPersons();
-            Map<Person, String> gravatarUrls = PersonConstants.getGravatarURLs(persons);
 
             model.addAttribute(DepartmentConstants.DEPARTMENT_ATTRIBUTE, department);
             model.addAttribute(PersonConstants.PERSONS_ATTRIBUTE, persons);
-            model.addAttribute(PersonConstants.GRAVATAR_URLS_ATTRIBUTE, gravatarUrls);
 
             return DepartmentConstants.DEPARTMENT_FORM_JSP;
         }

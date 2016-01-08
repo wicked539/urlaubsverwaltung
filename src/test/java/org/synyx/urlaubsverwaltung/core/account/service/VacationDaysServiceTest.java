@@ -1,10 +1,9 @@
 package org.synyx.urlaubsverwaltung.core.account.service;
 
-import junit.framework.Assert;
-
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeConstants;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,17 +13,18 @@ import org.synyx.urlaubsverwaltung.core.account.domain.Account;
 import org.synyx.urlaubsverwaltung.core.account.domain.VacationDaysLeft;
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.application.service.ApplicationService;
-import org.synyx.urlaubsverwaltung.core.calendar.NowService;
 import org.synyx.urlaubsverwaltung.core.calendar.PublicHolidaysService;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
 import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTime;
 import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTimeService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.NowService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.settings.Settings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
 import java.io.IOException;
 
@@ -78,8 +78,7 @@ public class VacationDaysServiceTest {
     @Test
     public void testGetDaysBeforeApril() {
 
-        Person person = new Person();
-        person.setLoginName("horscht");
+        Person person = TestDataCreator.createPerson("horscht");
 
         DateMidnight firstMilestone = new DateMidnight(2012, DateTimeConstants.JANUARY, 1);
         DateMidnight lastMilestone = new DateMidnight(2012, DateTimeConstants.MARCH, 31);
@@ -135,8 +134,7 @@ public class VacationDaysServiceTest {
     @Test
     public void testGetDaysAfterApril() {
 
-        Person person = new Person();
-        person.setLoginName("horscht");
+        Person person = TestDataCreator.createPerson("horscht");
 
         DateMidnight firstMilestone = new DateMidnight(2012, DateTimeConstants.APRIL, 1);
         DateMidnight lastMilestone = new DateMidnight(2012, DateTimeConstants.DECEMBER, 31);
@@ -183,8 +181,7 @@ public class VacationDaysServiceTest {
     @Test
     public void testGetDaysBetweenMilestonesWithInactiveApplicationsForLeaveAndOfOtherVacationTypeThanHoliday() {
 
-        Person person = new Person();
-        person.setLoginName("horscht");
+        Person person = TestDataCreator.createPerson("horscht");
 
         DateMidnight firstMilestone = new DateMidnight(2012, DateTimeConstants.APRIL, 1);
         DateMidnight lastMilestone = new DateMidnight(2012, DateTimeConstants.DECEMBER, 31);

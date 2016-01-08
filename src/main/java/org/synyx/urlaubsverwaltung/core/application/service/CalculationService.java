@@ -11,8 +11,8 @@ import org.synyx.urlaubsverwaltung.core.account.service.AccountInteractionServic
 import org.synyx.urlaubsverwaltung.core.account.service.AccountService;
 import org.synyx.urlaubsverwaltung.core.account.service.VacationDaysService;
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.util.DateUtil;
 
@@ -84,12 +84,16 @@ public class CalculationService {
             Optional<Account> holidaysAccountForOldYear = getHolidaysAccount(yearOfStartDate, person);
             Optional<Account> holidaysAccountForNewYear = getHolidaysAccount(yearOfEndDate, person);
 
-            return holidaysAccountForOldYear.isPresent() && holidaysAccountForNewYear.isPresent()
-                && vacationDaysService.calculateTotalLeftVacationDays(holidaysAccountForOldYear.get())
-                .compareTo(workDaysInOldYear) >= 0
-                && vacationDaysService.calculateTotalLeftVacationDays(holidaysAccountForNewYear.get())
-                .compareTo(workDaysInNewYear) >= 0;
+            return accountHasEnoughVacationDaysLeft(holidaysAccountForOldYear, workDaysInOldYear)
+                && accountHasEnoughVacationDaysLeft(holidaysAccountForNewYear, workDaysInNewYear);
         }
+    }
+
+
+    private boolean accountHasEnoughVacationDaysLeft(Optional<Account> account, BigDecimal workDays) {
+
+        return account.isPresent()
+            && vacationDaysService.calculateTotalLeftVacationDays(account.get()).compareTo(workDays) >= 0;
     }
 
 

@@ -1,10 +1,15 @@
 package org.synyx.urlaubsverwaltung.core.sicknote;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.Period;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 
 import java.util.Date;
@@ -26,21 +31,35 @@ public class SickNote extends AbstractPersistable<Integer> {
 
     private static final long serialVersionUID = 8524575678589823089L;
 
-    // One person may have multiple sick notes
+    /**
+     * One person may have multiple sick notes.
+     */
     @ManyToOne
     private Person person;
 
     @Enumerated(EnumType.STRING)
     private SickNoteType type;
 
-    // period of the illness
+    /**
+     * Sick note period: start and end date of the period, the employee is sick.
+     */
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date startDate;
 
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date endDate;
 
-    // period of the aub (Arbeitsunfähigkeitsbescheinigung)
+    /**
+     * Time of day for the sick note: morning, noon or full day
+     *
+     * @since  2.9.4
+     */
+    @Enumerated(EnumType.STRING)
+    private DayLength dayLength;
+
+    /**
+     * Period of the AUB (Arbeitsunfähigkeitsbescheinigung), is optional.
+     */
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date aubStartDate;
 
@@ -50,8 +69,13 @@ public class SickNote extends AbstractPersistable<Integer> {
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date lastEdited;
 
-    // if sick note has been converted to vacation, it's not active
-    private boolean active;
+    @Enumerated(EnumType.STRING)
+    private SickNoteStatus status;
+
+    public SickNote() {
+
+        this.lastEdited = DateTime.now().withTimeAtStartOfDay().toDate();
+    }
 
     public Person getPerson() {
 
@@ -114,6 +138,18 @@ public class SickNote extends AbstractPersistable<Integer> {
         } else {
             this.endDate = endDate.toDate();
         }
+    }
+
+
+    public DayLength getDayLength() {
+
+        return dayLength;
+    }
+
+
+    public void setDayLength(DayLength dayLength) {
+
+        this.dayLength = dayLength;
     }
 
 
@@ -185,13 +221,25 @@ public class SickNote extends AbstractPersistable<Integer> {
 
     public boolean isActive() {
 
-        return active;
+        return SickNoteStatus.ACTIVE.equals(getStatus());
     }
 
 
-    public void setActive(boolean active) {
+    public SickNoteStatus getStatus() {
 
-        this.active = active;
+        return status;
+    }
+
+
+    public void setStatus(SickNoteStatus status) {
+
+        this.status = status;
+    }
+
+
+    public Period getPeriod() {
+
+        return new Period(getStartDate(), getEndDate(), getDayLength());
     }
 
 
@@ -199,5 +247,19 @@ public class SickNote extends AbstractPersistable<Integer> {
     public void setId(Integer id) {
 
         super.setId(id);
+    }
+
+
+    @Override
+    public String toString() {
+
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", getId())
+            .append("startDate", getStartDate())
+            .append("endDate", getEndDate())
+            .append("dayLength", getDayLength())
+            .append("type", getType())
+            .append("status", getStatus())
+            .append("person", getPerson())
+            .toString();
     }
 }

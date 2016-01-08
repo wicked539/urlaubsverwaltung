@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.synyx.urlaubsverwaltung.core.application.dao.ApplicationDAO;
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.sicknote.SickNote;
 import org.synyx.urlaubsverwaltung.core.sicknote.SickNoteDAO;
@@ -88,8 +88,8 @@ public class OverlapService {
         DateMidnight startDate = sickNote.getStartDate();
         DateMidnight endDate = sickNote.getEndDate();
 
-        // NOTE: Sick notes are always for the full day
-        List<Application> applications = getRelevantApplicationsForLeave(person, startDate, endDate, DayLength.FULL);
+        List<Application> applications = getRelevantApplicationsForLeave(person, startDate, endDate,
+                sickNote.getDayLength());
 
         List<SickNote> sickNotes = getRelevantSickNotes(person, startDate, endDate);
 

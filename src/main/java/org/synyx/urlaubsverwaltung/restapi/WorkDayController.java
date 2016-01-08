@@ -10,17 +10,15 @@ import org.joda.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.stereotype.Controller;
-
 import org.springframework.util.StringUtils;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
 
@@ -33,7 +31,8 @@ import java.util.Optional;
  * @author  Aljona Murygina - murygina@synyx.de
  */
 @Api(value = "Work Days", description = "Get information about work day in a certain period")
-@Controller("restApiWorkDayController")
+@RestController("restApiWorkDayController")
+@RequestMapping("/api")
 public class WorkDayController {
 
     private static final String ROOT_URL = "/workdays";
@@ -59,8 +58,7 @@ public class WorkDayController {
         notes = "The calculation depends on the working time of the person."
     )
     @RequestMapping(value = ROOT_URL, method = RequestMethod.GET)
-    @ResponseBody
-    public String workDays(
+    public ResponseWrapper<WorkDayResponse> workDays(
         @ApiParam(value = "Start date with pattern yyyy-MM-dd", defaultValue = "2015-01-01")
         @RequestParam("from")
         String from,
@@ -84,15 +82,15 @@ public class WorkDayController {
                 Optional<Person> person = personService.getPersonByID(personId);
 
                 if (!person.isPresent()) {
-                    return "N/A";
+                    return new ResponseWrapper<>(new WorkDayResponse("N/A"));
                 }
 
                 BigDecimal days = workDaysService.getWorkDays(howLong, startDate, endDate, person.get());
 
-                return days.toString();
+                return new ResponseWrapper<>(new WorkDayResponse(days.toString()));
             }
         }
 
-        return "N/A";
+        return new ResponseWrapper<>(new WorkDayResponse("N/A"));
     }
 }

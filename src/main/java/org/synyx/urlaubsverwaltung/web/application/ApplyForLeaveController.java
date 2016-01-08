@@ -4,6 +4,8 @@ import org.joda.time.DateMidnight;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import org.springframework.stereotype.Controller;
 
 import org.springframework.ui.Model;
@@ -25,16 +27,20 @@ import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.application.service.ApplicationInteractionService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
-import org.synyx.urlaubsverwaltung.security.Role;
+import org.synyx.urlaubsverwaltung.core.person.Role;
 import org.synyx.urlaubsverwaltung.security.SessionService;
 import org.synyx.urlaubsverwaltung.web.ControllerConstants;
 import org.synyx.urlaubsverwaltung.web.DateMidnightPropertyEditor;
+import org.synyx.urlaubsverwaltung.web.DecimalNumberPropertyEditor;
 import org.synyx.urlaubsverwaltung.web.PersonPropertyEditor;
 import org.synyx.urlaubsverwaltung.web.person.PersonConstants;
-import org.synyx.urlaubsverwaltung.web.validator.ApplicationValidator;
+import org.synyx.urlaubsverwaltung.web.person.UnknownPersonException;
+
+import java.math.BigDecimal;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -44,8 +50,8 @@ import java.util.stream.Collectors;
  *
  * @author  Aljona Murygina - murygina@synyx.de
  */
-@RequestMapping("/application")
 @Controller
+@RequestMapping("/web")
 public class ApplyForLeaveController {
 
     @Autowired
@@ -64,9 +70,10 @@ public class ApplyForLeaveController {
     private ApplicationValidator applicationValidator;
 
     @InitBinder
-    public void initBinder(DataBinder binder) {
+    public void initBinder(DataBinder binder, Locale locale) {
 
         binder.registerCustomEditor(DateMidnight.class, new DateMidnightPropertyEditor());
+        binder.registerCustomEditor(BigDecimal.class, new DecimalNumberPropertyEditor(locale));
         binder.registerCustomEditor(Person.class, new PersonPropertyEditor(personService));
     }
 
@@ -75,40 +82,32 @@ public class ApplyForLeaveController {
      * Show form to apply for leave.
      *
      * @param  personId  of the person that applies for leave
-     * @param  applyingOnBehalfOfSomeOne  defines if applying for leave on behalf for somebody
      * @param  model  to be filled
      *
      * @return  form to apply for leave
      */
-    @RequestMapping(value = "/new", method = RequestMethod.GET)
-    public String newApplicationForm(@RequestParam(value = "personId", required = false) Integer personId,
-        @RequestParam(value = "appliesOnOnesBehalf", required = false) Boolean applyingOnBehalfOfSomeOne, Model model) {
-
-        Person person;
-        Person applier;
+    @RequestMapping(value = "/application/new", method = RequestMethod.GET)
+    public String newApplicationForm(
+        @RequestParam(value = PersonConstants.PERSON_ATTRIBUTE, required = false) Integer personId, Model model)
+        throws UnknownPersonException, AccessDeniedException {
 
         Person signedInUser = sessionService.getSignedInUser();
 
+        Person person;
+
         if (personId == null) {
             person = signedInUser;
-            applier = person;
         } else {
-            java.util.Optional<Person> personByID = personService.getPersonByID(personId);
-
-            if (!personByID.isPresent()) {
-                return ControllerConstants.ERROR_JSP;
-            }
-
-            person = personByID.get();
-            applier = signedInUser;
+            person = personService.getPersonByID(personId).orElseThrow(() -> new UnknownPersonException(personId));
         }
 
-        boolean isApplyingForOneSelf = person.equals(applier);
+        boolean isApplyingForOneSelf = person.equals(signedInUser);
 
         // only office may apply for leave on behalf of other users
-        if ((!isApplyingForOneSelf && !signedInUser.hasRole(Role.OFFICE))
-                || (applyingOnBehalfOfSomeOne != null && !signedInUser.hasRole(Role.OFFICE))) {
-            return ControllerConstants.ERROR_JSP;
+        if (!isApplyingForOneSelf && !signedInUser.hasRole(Role.OFFICE)) {
+            throw new AccessDeniedException(String.format(
+                    "User '%s' has not the correct permissions to apply for leave for user '%s'",
+                    signedInUser.getLoginName(), person.getLoginName()));
         }
 
         Optional<Account> holidaysAccount = accountService.getHolidaysAccount(DateMidnight.now().getYear(), person);
@@ -118,7 +117,6 @@ public class ApplyForLeaveController {
         }
 
         model.addAttribute("noHolidaysAccount", !holidaysAccount.isPresent());
-        model.addAttribute("appliesOnOnesBehalf", applyingOnBehalfOfSomeOne);
 
         return "application/app_form";
     }
@@ -144,30 +142,16 @@ public class ApplyForLeaveController {
     }
 
 
-    @RequestMapping(value = "/new", method = RequestMethod.POST)
-    public String newApplication(@RequestParam(value = "personId", required = false) Integer personId,
-        @ModelAttribute("application") ApplicationForLeaveForm appForm, RedirectAttributes redirectAttributes,
-        Errors errors, Model model) {
+    @RequestMapping(value = "/application", method = RequestMethod.POST)
+    public String newApplication(@ModelAttribute("application") ApplicationForLeaveForm appForm, Errors errors,
+        Model model, RedirectAttributes redirectAttributes) throws UnknownPersonException {
 
         Person applier = sessionService.getSignedInUser();
-        Person personToApplyForLeave;
-
-        if (personId == null) {
-            personToApplyForLeave = applier;
-        } else {
-            java.util.Optional<Person> optionalPerson = personService.getPersonByID(personId);
-
-            if (!optionalPerson.isPresent()) {
-                return ControllerConstants.ERROR_JSP;
-            }
-
-            personToApplyForLeave = optionalPerson.get();
-        }
 
         applicationValidator.validate(appForm, errors);
 
         if (errors.hasErrors()) {
-            prepareApplicationForLeaveForm(personToApplyForLeave, appForm, model);
+            prepareApplicationForLeaveForm(appForm.getPerson(), appForm, model);
 
             if (errors.hasGlobalErrors()) {
                 model.addAttribute(ControllerConstants.ERRORS_ATTRIBUTE, errors);

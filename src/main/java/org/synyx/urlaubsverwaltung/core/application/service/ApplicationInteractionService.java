@@ -1,6 +1,8 @@
 package org.synyx.urlaubsverwaltung.core.application.service;
 
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
+import org.synyx.urlaubsverwaltung.core.application.service.exception.ImpatientAboutApplicationForLeaveProcessException;
+import org.synyx.urlaubsverwaltung.core.application.service.exception.RemindAlreadySentException;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 
 import java.util.Optional;
@@ -63,4 +65,42 @@ public interface ApplicationInteractionService {
      * @return  the cancelled application for leave
      */
     Application cancel(Application application, Person canceller, Optional<String> comment);
+
+
+    /**
+     * Create a directly allowed application for leave due to a converted sick note.
+     *
+     * @param  application  to be created directly as allowed
+     * @param  creator  executes the creation
+     *
+     * @return  the created application for leave
+     */
+    Application createFromConvertedSickNote(Application application, Person creator);
+
+
+    /**
+     * Remind the persons with role {@link org.synyx.urlaubsverwaltung.core.person.Role#BOSS} to decide about the
+     * application for leave (allow or reject it).
+     *
+     * @param  application  for leave to be checked
+     *
+     * @return  the application for leave that should be checked
+     *
+     * @throws  RemindAlreadySentException  in case today already sent remind
+     * @throws  ImpatientAboutApplicationForLeaveProcessException  in case try to remind too early
+     */
+    Application remind(Application application) throws RemindAlreadySentException,
+        ImpatientAboutApplicationForLeaveProcessException;
+
+
+    /**
+     * Refer the given application for leave to the given person.
+     *
+     * @param  application  for leave to be referred
+     * @param  recipient  who should decide about the application for leave
+     * @param  sender  who ask another person to decide about the application for leave
+     *
+     * @return  the application for leave that is referred
+     */
+    Application refer(Application application, Person recipient, Person sender);
 }

@@ -1,6 +1,7 @@
 package org.synyx.urlaubsverwaltung.core.account.domain;
 
-import com.google.common.base.MoreObjects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
@@ -46,6 +47,7 @@ public class Account extends AbstractPersistable<Integer> {
 
     // remaining vacation days from the last year, if it's after 1st April, only the not expiring remaining vacation
     // days may be used
+
     private BigDecimal remainingVacationDays;
     private BigDecimal remainingVacationDaysNotExpiring;
 
@@ -175,16 +177,14 @@ public class Account extends AbstractPersistable<Integer> {
     @Override
     public String toString() {
 
-        MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
-
-        toStringHelper.add("person", getPerson().getLoginName());
-        toStringHelper.add("validFrom", getValidFrom());
-        toStringHelper.add("validTo", getValidTo());
-        toStringHelper.add("annualVacationDays", getAnnualVacationDays());
-        toStringHelper.add("vacationDays", getVacationDays());
-        toStringHelper.add("remainingVacationDays", getRemainingVacationDays());
-        toStringHelper.add("remainingVacationDaysNotExpiring", getRemainingVacationDaysNotExpiring());
-
-        return toStringHelper.toString();
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE) // NOSONAR - Formatting issues
+            .append("person", getPerson().getLoginName())
+            .append("validFrom", getValidFrom())
+            .append("validTo", getValidTo())
+            .append("annualVacationDays", getAnnualVacationDays())
+            .append("vacationDays", getVacationDays())
+            .append("remainingVacationDays", getRemainingVacationDays())
+            .append("remainingVacationDaysNotExpiring", getRemainingVacationDaysNotExpiring())
+            .toString();
     }
 }

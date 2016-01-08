@@ -2,12 +2,12 @@ package org.synyx.urlaubsverwaltung.web;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.stereotype.Component;
+
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
-import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.security.SessionService;
-import org.synyx.urlaubsverwaltung.web.util.GravatarUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @author  Aljona Murygina - murygina@synyx.de
  */
+@Component
 public class UserInterceptor implements HandlerInterceptor {
 
     private final SessionService sessionService;
@@ -39,12 +40,9 @@ public class UserInterceptor implements HandlerInterceptor {
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
         ModelAndView modelAndView) {
 
-        if (modelAndView != null && !modelAndView.getViewName().startsWith("redirect:")) {
-            Person signedInUser = sessionService.getSignedInUser();
-            String gravatar = GravatarUtil.createImgURL(signedInUser.getEmail());
-
-            modelAndView.addObject("signedInUser", signedInUser);
-            modelAndView.addObject("signedInUserGravatar", gravatar);
+        if (modelAndView != null && !modelAndView.getViewName().startsWith("redirect:")
+                && !modelAndView.getViewName().startsWith("login")) {
+            modelAndView.addObject("signedInUser", sessionService.getSignedInUser());
         }
     }
 

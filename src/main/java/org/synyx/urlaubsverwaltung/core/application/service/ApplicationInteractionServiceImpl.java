@@ -12,18 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.synyx.urlaubsverwaltung.core.account.service.AccountInteractionService;
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
+import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationAction;
+import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationComment;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
-import org.synyx.urlaubsverwaltung.core.application.domain.Comment;
+import org.synyx.urlaubsverwaltung.core.application.service.exception.ImpatientAboutApplicationForLeaveProcessException;
+import org.synyx.urlaubsverwaltung.core.application.service.exception.RemindAlreadySentException;
 import org.synyx.urlaubsverwaltung.core.mail.MailService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.settings.CalendarSettings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
 import org.synyx.urlaubsverwaltung.core.sync.CalendarSyncService;
-import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
-import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMapping;
-import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMappingService;
-import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceTimeConfiguration;
-import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceType;
+import org.synyx.urlaubsverwaltung.core.sync.absence.*;
 
 import java.util.Optional;
 
@@ -37,20 +36,22 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
 
     private static final Logger LOG = Logger.getLogger(ApplicationInteractionServiceImpl.class);
 
+    private static final int MIN_DAYS_LEFT_BEFORE_REMINDING_IS_POSSIBLE = 2;
+
     private final ApplicationService applicationService;
     private final AccountInteractionService accountInteractionService;
     private final SignService signService;
-    private final CommentService commentService;
+    private final ApplicationCommentService commentService;
     private final MailService mailService;
     private final CalendarSyncService calendarSyncService;
     private final AbsenceMappingService absenceMappingService;
     private final SettingsService settingsService;
 
     @Autowired
-    public ApplicationInteractionServiceImpl(ApplicationService applicationService, CommentService commentService,
-        AccountInteractionService accountInteractionService, SignService signService, MailService mailService,
-        CalendarSyncService calendarSyncService, AbsenceMappingService absenceMappingService,
-        SettingsService settingsService) {
+    public ApplicationInteractionServiceImpl(ApplicationService applicationService,
+        ApplicationCommentService commentService, AccountInteractionService accountInteractionService,
+        SignService signService, MailService mailService, CalendarSyncService calendarSyncService,
+        AbsenceMappingService absenceMappingService, SettingsService settingsService) {
 
         this.applicationService = applicationService;
         this.commentService = commentService;
@@ -78,7 +79,8 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
         LOG.info("Created application for leave: " + application.toString());
 
         // COMMENT
-        Comment createdComment = commentService.create(application, ApplicationStatus.WAITING, comment, applier);
+        ApplicationComment createdComment = commentService.create(application, ApplicationAction.APPLIED, comment,
+                applier);
 
         // EMAILS
 
@@ -102,10 +104,11 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
         CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
         AbsenceTimeConfiguration timeConfiguration = new AbsenceTimeConfiguration(calendarSettings);
 
-        Optional<String> eventId = calendarSyncService.addAbsence(new Absence(application, timeConfiguration));
+        Optional<String> eventId = calendarSyncService.addAbsence(new Absence(application.getPerson(),
+                    application.getPeriod(), EventType.WAITING_APPLICATION, timeConfiguration));
 
         if (eventId.isPresent()) {
-            absenceMappingService.create(application, eventId.get());
+            absenceMappingService.create(application.getId(), AbsenceType.VACATION, eventId.get());
         }
 
         return application;
@@ -125,7 +128,8 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
 
         LOG.info("Allowed application for leave: " + application.toString());
 
-        Comment createdComment = commentService.create(application, ApplicationStatus.ALLOWED, comment, boss);
+        ApplicationComment createdComment = commentService.create(application, ApplicationAction.ALLOWED, comment,
+                boss);
 
         mailService.sendAllowedNotification(application, createdComment);
 
@@ -139,7 +143,8 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
         if (absenceMapping.isPresent()) {
             CalendarSettings calendarSettings = settingsService.getSettings().getCalendarSettings();
             AbsenceTimeConfiguration timeConfiguration = new AbsenceTimeConfiguration(calendarSettings);
-            calendarSyncService.update(new Absence(application, timeConfiguration), absenceMapping.get().getEventId());
+            calendarSyncService.update(new Absence(application.getPerson(), application.getPeriod(),
+                    EventType.ALLOWED_APPLICATION, timeConfiguration), absenceMapping.get().getEventId());
         }
 
         return application;
@@ -159,7 +164,8 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
 
         LOG.info("Rejected application for leave: " + application.toString());
 
-        Comment createdComment = commentService.create(application, ApplicationStatus.REJECTED, comment, boss);
+        ApplicationComment createdComment = commentService.create(application, ApplicationAction.REJECTED, comment,
+                boss);
 
         mailService.sendRejectedNotification(application, createdComment);
 
@@ -179,21 +185,24 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
     public Application cancel(Application application, Person canceller, Optional<String> comment) {
 
         boolean cancellingAllowedApplication = application.hasStatus(ApplicationStatus.ALLOWED);
+        ApplicationAction commentStatus;
 
         application.setCanceller(canceller);
         application.setCancelDate(DateMidnight.now());
 
         if (cancellingAllowedApplication) {
             application.setStatus(ApplicationStatus.CANCELLED);
+            commentStatus = ApplicationAction.CANCELLED;
         } else {
             application.setStatus(ApplicationStatus.REVOKED);
+            commentStatus = ApplicationAction.REVOKED;
         }
 
         applicationService.save(application);
 
         LOG.info("Cancelled application for leave: " + application);
 
-        Comment createdComment = commentService.create(application, application.getStatus(), comment, canceller);
+        ApplicationComment createdComment = commentService.create(application, commentStatus, comment, canceller);
 
         if (cancellingAllowedApplication) {
             // if allowed application has been cancelled, office and bosses get an email
@@ -217,6 +226,60 @@ public class ApplicationInteractionServiceImpl implements ApplicationInteraction
             calendarSyncService.deleteAbsence(absenceMapping.get().getEventId());
             absenceMappingService.delete(absenceMapping.get());
         }
+
+        return application;
+    }
+
+
+    @Override
+    public Application createFromConvertedSickNote(Application application, Person creator) {
+
+        // create an application for leave that is allowed directly
+        application.setApplier(creator);
+        application.setStatus(ApplicationStatus.ALLOWED);
+
+        signService.signApplicationByBoss(application, creator);
+        applicationService.save(application);
+
+        commentService.create(application, ApplicationAction.CONVERTED, Optional.<String>empty(), creator);
+        mailService.sendSickNoteConvertedToVacationNotification(application);
+
+        return application;
+    }
+
+
+    @Override
+    public Application remind(Application application) throws RemindAlreadySentException,
+        ImpatientAboutApplicationForLeaveProcessException {
+
+        DateMidnight remindDate = application.getRemindDate();
+
+        if (remindDate == null) {
+            DateMidnight minDateForNotification = application.getApplicationDate()
+                .plusDays(MIN_DAYS_LEFT_BEFORE_REMINDING_IS_POSSIBLE);
+
+            if (minDateForNotification.isAfterNow()) {
+                throw new ImpatientAboutApplicationForLeaveProcessException("It's too early to remind the bosses!");
+            }
+        }
+
+        if (remindDate != null && remindDate.isEqual(DateMidnight.now())) {
+            throw new RemindAlreadySentException("Reminding is possible maximum one time per day!");
+        }
+
+        mailService.sendRemindBossNotification(application);
+
+        application.setRemindDate(DateMidnight.now());
+        applicationService.save(application);
+
+        return application;
+    }
+
+
+    @Override
+    public Application refer(Application application, Person recipient, Person sender) {
+
+        mailService.sendReferApplicationNotification(application, recipient, sender);
 
         return application;
     }

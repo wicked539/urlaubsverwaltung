@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -28,6 +29,14 @@
     <include file="dbchangelogs/changelog-2.9.1-add-mail-settings.xml"/>
     <include file="dbchangelogs/changelog-2.9.2-add-ews-calendar-settings.xml"/>
     <include file="dbchangelogs/changelog-2.9.3-add-google-calendar-settings.xml"/>
-
-
+    <include file="dbchangelogs/changelog-2.9.3-add-domain-to-ews-calendar-settings.xml"/>
+    <include file="dbchangelogs/changelog-2.9.4-add-column-dayLength-to-sick-note.xml"/>
+    <include file="dbchangelogs/changelog-2.10.0-add-password-column.xml"/>
+    <include file="dbchangelogs/changelog-2.11.0-add-overtime-table.xml"/>
+    <include file="dbchangelogs/changelog-2.11.0-clean-up-comment-tables.xml"/>
+    <include file="dbchangelogs/changelog-2.11.0-add-overtime-comment-table.xml"/>
+    <include file="dbchangelogs/changelog-2.11.0-add-hours-to-application-table.xml"/>
+    <include file="dbchangelogs/changelog-2.11.3-rename-exchange-calendar-settings-username-column.xml"/>
+    <include file="dbchangelogs/changelog-2.11.4-simplify-exchange-calendar-settings.xml"/>
+    <include file="dbchangelogs/changelog-2.11.5-add-google-calendar-settings.xml"/>
 </databaseChangeLog>

@@ -1,9 +1,8 @@
 package org.synyx.urlaubsverwaltung.core.sicknote;
 
-import junit.framework.Assert;
-
 import org.joda.time.DateMidnight;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -11,21 +10,17 @@ import org.mockito.Mockito;
 
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
-import org.synyx.urlaubsverwaltung.core.application.service.ApplicationService;
-import org.synyx.urlaubsverwaltung.core.application.service.CommentService;
-import org.synyx.urlaubsverwaltung.core.application.service.SignService;
-import org.synyx.urlaubsverwaltung.core.mail.MailService;
+import org.synyx.urlaubsverwaltung.core.application.service.ApplicationInteractionService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.settings.Settings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
-import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteCommentService;
-import org.synyx.urlaubsverwaltung.core.sicknote.comment.SickNoteStatus;
 import org.synyx.urlaubsverwaltung.core.sync.CalendarSyncService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.Absence;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMapping;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceMappingService;
 import org.synyx.urlaubsverwaltung.core.sync.absence.AbsenceType;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
 import java.util.Optional;
 
@@ -44,11 +39,8 @@ public class SickNoteInteractionServiceImplTest {
     private SickNoteInteractionService sickNoteInteractionService;
 
     private SickNoteService sickNoteService;
-    private SickNoteCommentService sickNoteCommentService;
-    private ApplicationService applicationService;
-    private CommentService applicationCommentService;
-    private SignService signService;
-    private MailService mailService;
+    private SickNoteCommentService commentService;
+    private ApplicationInteractionService applicationInteractionService;
     private CalendarSyncService calendarSyncService;
     private AbsenceMappingService absenceMappingService;
     private SettingsService settingsService;
@@ -60,11 +52,8 @@ public class SickNoteInteractionServiceImplTest {
     public void setUp() {
 
         sickNoteService = Mockito.mock(SickNoteService.class);
-        sickNoteCommentService = Mockito.mock(SickNoteCommentService.class);
-        applicationService = Mockito.mock(ApplicationService.class);
-        applicationCommentService = Mockito.mock(CommentService.class);
-        signService = Mockito.mock(SignService.class);
-        mailService = Mockito.mock(MailService.class);
+        commentService = Mockito.mock(SickNoteCommentService.class);
+        applicationInteractionService = Mockito.mock(ApplicationInteractionService.class);
         calendarSyncService = Mockito.mock(CalendarSyncService.class);
         absenceMappingService = Mockito.mock(AbsenceMappingService.class);
         settingsService = Mockito.mock(SettingsService.class);
@@ -74,15 +63,18 @@ public class SickNoteInteractionServiceImplTest {
             .thenReturn(Optional.of(new AbsenceMapping(1, AbsenceType.VACATION, "42")));
         Mockito.when(settingsService.getSettings()).thenReturn(new Settings());
 
-        sickNoteInteractionService = new SickNoteInteractionServiceImpl(sickNoteService, sickNoteCommentService,
-                applicationService, applicationCommentService, signService, mailService, calendarSyncService,
-                absenceMappingService, settingsService);
+        sickNoteInteractionService = new SickNoteInteractionServiceImpl(sickNoteService, commentService,
+                applicationInteractionService, calendarSyncService, absenceMappingService, settingsService);
 
         sickNote = new SickNote();
+        sickNote.setId(42);
+        sickNote.setStatus(SickNoteStatus.ACTIVE);
         sickNote.setStartDate(DateMidnight.now());
         sickNote.setEndDate(DateMidnight.now());
+        sickNote.setDayLength(DayLength.FULL);
+        sickNote.setPerson(TestDataCreator.createPerson());
 
-        person = new Person();
+        person = TestDataCreator.createPerson();
     }
 
 
@@ -92,23 +84,23 @@ public class SickNoteInteractionServiceImplTest {
         SickNote createdSickNote = sickNoteInteractionService.create(sickNote, person);
 
         Mockito.verify(sickNoteService).save(sickNote);
-        Mockito.verify(sickNoteCommentService)
-            .create(sickNote, SickNoteStatus.CREATED, Optional.<String>empty(), person);
+        Mockito.verify(commentService).create(sickNote, SickNoteAction.CREATED, Optional.<String>empty(), person);
 
         Assert.assertNotNull("Should not be null", createdSickNote);
 
         Assert.assertNotNull("Last edited date should be set", createdSickNote.getLastEdited());
-        Assert.assertTrue("Should be active", createdSickNote.isActive());
+        Assert.assertEquals("Wrong status", SickNoteStatus.ACTIVE, createdSickNote.getStatus());
     }
 
 
     @Test
     public void ensureCreatingSickNoteAddsEventToCalendar() throws Exception {
 
-        SickNote createdSickNote = sickNoteInteractionService.create(sickNote, person);
+        sickNoteInteractionService.create(sickNote, person);
 
         Mockito.verify(calendarSyncService).addAbsence(Mockito.any(Absence.class));
-        Mockito.verify(absenceMappingService).create(eq(createdSickNote), Mockito.anyString());
+        Mockito.verify(absenceMappingService)
+            .create(Mockito.eq(sickNote.getId()), eq(AbsenceType.SICKNOTE), Mockito.anyString());
     }
 
 
@@ -118,13 +110,12 @@ public class SickNoteInteractionServiceImplTest {
         SickNote updatedSickNote = sickNoteInteractionService.update(sickNote, person);
 
         Mockito.verify(sickNoteService).save(sickNote);
-        Mockito.verify(sickNoteCommentService)
-            .create(sickNote, SickNoteStatus.EDITED, Optional.<String>empty(), person);
+        Mockito.verify(commentService).create(sickNote, SickNoteAction.EDITED, Optional.<String>empty(), person);
 
         Assert.assertNotNull("Should not be null", updatedSickNote);
 
         Assert.assertNotNull("Last edited date should be set", updatedSickNote.getLastEdited());
-        Assert.assertTrue("Should be active", updatedSickNote.isActive());
+        Assert.assertEquals("Wrong status", SickNoteStatus.ACTIVE, updatedSickNote.getStatus());
     }
 
 
@@ -144,13 +135,12 @@ public class SickNoteInteractionServiceImplTest {
         SickNote cancelledSickNote = sickNoteInteractionService.cancel(sickNote, person);
 
         Mockito.verify(sickNoteService).save(sickNote);
-        Mockito.verify(sickNoteCommentService)
-            .create(sickNote, SickNoteStatus.CANCELLED, Optional.<String>empty(), person);
+        Mockito.verify(commentService).create(sickNote, SickNoteAction.CANCELLED, Optional.<String>empty(), person);
 
         Assert.assertNotNull("Should not be null", cancelledSickNote);
 
         Assert.assertNotNull("Last edited date should be set", cancelledSickNote.getLastEdited());
-        Assert.assertFalse("Should be inactive", cancelledSickNote.isActive());
+        Assert.assertEquals("Wrong status", SickNoteStatus.CANCELLED, cancelledSickNote.getStatus());
     }
 
 
@@ -173,33 +163,23 @@ public class SickNoteInteractionServiceImplTest {
         applicationForLeave.setEndDate(DateMidnight.now());
         applicationForLeave.setStatus(ApplicationStatus.ALLOWED);
         applicationForLeave.setDayLength(DayLength.FULL);
+        applicationForLeave.setPerson(TestDataCreator.createPerson());
 
         SickNote convertedSickNote = sickNoteInteractionService.convert(sickNote, applicationForLeave, person);
 
         // assert sick note correctly updated
 
         Mockito.verify(sickNoteService).save(sickNote);
-        Mockito.verify(sickNoteCommentService)
-            .create(sickNote, SickNoteStatus.CONVERTED_TO_VACATION, Optional.<String>empty(), person);
+        Mockito.verify(commentService)
+            .create(sickNote, SickNoteAction.CONVERTED_TO_VACATION, Optional.<String>empty(), person);
 
         Assert.assertNotNull("Should not be null", convertedSickNote);
 
         Assert.assertNotNull("Last edited date should be set", convertedSickNote.getLastEdited());
-        Assert.assertFalse("Should be inactive", convertedSickNote.isActive());
+        Assert.assertEquals("Wrong status", SickNoteStatus.CONVERTED_TO_VACATION, convertedSickNote.getStatus());
 
         // assert application for leave correctly created
-
-        Mockito.verify(applicationService).save(applicationForLeave);
-        Mockito.verify(applicationCommentService)
-            .create(eq(applicationForLeave), eq(ApplicationStatus.ALLOWED), eq(Optional.<String>empty()), eq(person));
-        Mockito.verify(signService).signApplicationByBoss(eq(applicationForLeave), eq(person));
-        Mockito.verify(mailService).sendSickNoteConvertedToVacationNotification(eq(applicationForLeave));
-
-        Assert.assertNotNull("Status should be set", applicationForLeave.getStatus());
-        Assert.assertNotNull("Applier should be set", applicationForLeave.getApplier());
-
-        Assert.assertEquals("Wrong status", ApplicationStatus.ALLOWED, applicationForLeave.getStatus());
-        Assert.assertEquals("Wrong applier", person, applicationForLeave.getApplier());
+        Mockito.verify(applicationInteractionService).createFromConvertedSickNote(applicationForLeave, person);
     }
 
 
@@ -211,6 +191,7 @@ public class SickNoteInteractionServiceImplTest {
         applicationForLeave.setEndDate(DateMidnight.now());
         applicationForLeave.setStatus(ApplicationStatus.ALLOWED);
         applicationForLeave.setDayLength(DayLength.FULL);
+        applicationForLeave.setPerson(TestDataCreator.createPerson());
 
         AbsenceMapping absenceMapping = new AbsenceMapping();
         Mockito.when(absenceMappingService.getAbsenceByIdAndType(Mockito.anyInt(), Mockito.eq(AbsenceType.SICKNOTE)))
@@ -221,6 +202,7 @@ public class SickNoteInteractionServiceImplTest {
         Mockito.verify(absenceMappingService).getAbsenceByIdAndType(Mockito.anyInt(), Mockito.eq(AbsenceType.SICKNOTE));
         Mockito.verify(calendarSyncService).update(Mockito.any(Absence.class), Mockito.anyString());
         Mockito.verify(absenceMappingService).delete(Mockito.eq(absenceMapping));
-        Mockito.verify(absenceMappingService).create(Mockito.eq(applicationForLeave), Mockito.anyString());
+        Mockito.verify(absenceMappingService)
+            .create(Mockito.anyInt(), Mockito.eq(AbsenceType.VACATION), Mockito.anyString());
     }
 }

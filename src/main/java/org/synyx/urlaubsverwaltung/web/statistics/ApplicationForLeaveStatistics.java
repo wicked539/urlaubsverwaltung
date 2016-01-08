@@ -1,9 +1,14 @@
 package org.synyx.urlaubsverwaltung.web.statistics;
 
+import org.springframework.util.Assert;
+
+import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.person.Person;
-import org.synyx.urlaubsverwaltung.web.util.GravatarUtil;
 
 import java.math.BigDecimal;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -15,16 +20,23 @@ import java.math.BigDecimal;
 public class ApplicationForLeaveStatistics {
 
     private final Person person;
-    private final String gravatarUrl;
 
-    private BigDecimal waitingVacationDays = BigDecimal.ZERO;
-    private BigDecimal allowedVacationDays = BigDecimal.ZERO;
+    private final Map<VacationType, BigDecimal> waitingVacationDays = new HashMap<>();
+    private final Map<VacationType, BigDecimal> allowedVacationDays = new HashMap<>();
+
     private BigDecimal leftVacationDays = BigDecimal.ZERO;
+    private BigDecimal leftOvertime = BigDecimal.ZERO;
 
     public ApplicationForLeaveStatistics(Person person) {
 
+        Assert.notNull(person, "Person must be given.");
+
         this.person = person;
-        this.gravatarUrl = GravatarUtil.createImgURL(person.getEmail());
+
+        for (VacationType vacationType : VacationType.values()) {
+            waitingVacationDays.put(vacationType, BigDecimal.ZERO);
+            allowedVacationDays.put(vacationType, BigDecimal.ZERO);
+        }
     }
 
     public Person getPerson() {
@@ -33,21 +45,27 @@ public class ApplicationForLeaveStatistics {
     }
 
 
-    public String getGravatarUrl() {
+    public BigDecimal getTotalWaitingVacationDays() {
 
-        return gravatarUrl;
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (BigDecimal days : getWaitingVacationDays().values()) {
+            total = total.add(days);
+        }
+
+        return total;
     }
 
 
-    public BigDecimal getWaitingVacationDays() {
+    public BigDecimal getTotalAllowedVacationDays() {
 
-        return waitingVacationDays;
-    }
+        BigDecimal total = BigDecimal.ZERO;
 
+        for (BigDecimal days : getAllowedVacationDays().values()) {
+            total = total.add(days);
+        }
 
-    public BigDecimal getAllowedVacationDays() {
-
-        return allowedVacationDays;
+        return total;
     }
 
 
@@ -57,20 +75,58 @@ public class ApplicationForLeaveStatistics {
     }
 
 
-    public void setWaitingVacationDays(BigDecimal waitingVacationDays) {
+    public Map<VacationType, BigDecimal> getWaitingVacationDays() {
 
-        this.waitingVacationDays = waitingVacationDays;
+        return waitingVacationDays;
     }
 
 
-    public void setAllowedVacationDays(BigDecimal allowedVacationDays) {
+    public Map<VacationType, BigDecimal> getAllowedVacationDays() {
 
-        this.allowedVacationDays = allowedVacationDays;
+        return allowedVacationDays;
     }
 
 
     public void setLeftVacationDays(BigDecimal leftVacationDays) {
 
+        Assert.notNull(leftVacationDays, "Days must be given.");
+
         this.leftVacationDays = leftVacationDays;
+    }
+
+
+    public void addWaitingVacationDays(VacationType vacationType, BigDecimal waitingVacationDays) {
+
+        Assert.notNull(vacationType, "Vacation type must be given.");
+        Assert.notNull(waitingVacationDays, "Days must be given.");
+
+        BigDecimal currentWaitingVacationDays = getWaitingVacationDays().get(vacationType);
+
+        getWaitingVacationDays().put(vacationType, currentWaitingVacationDays.add(waitingVacationDays));
+    }
+
+
+    public void addAllowedVacationDays(VacationType vacationType, BigDecimal allowedVacationDays) {
+
+        Assert.notNull(vacationType, "Vacation type must be given.");
+        Assert.notNull(allowedVacationDays, "Days must be given.");
+
+        BigDecimal currentAllowedVacationDays = getAllowedVacationDays().get(vacationType);
+
+        getAllowedVacationDays().put(vacationType, currentAllowedVacationDays.add(allowedVacationDays));
+    }
+
+
+    public void setLeftOvertime(BigDecimal hours) {
+
+        Assert.notNull(hours, "Hours must be given.");
+
+        this.leftOvertime = hours;
+    }
+
+
+    public BigDecimal getLeftOvertime() {
+
+        return leftOvertime;
     }
 }

@@ -3,10 +3,9 @@ package org.synyx.urlaubsverwaltung.core.person;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.synyx.urlaubsverwaltung.core.mail.MailNotification;
-import org.synyx.urlaubsverwaltung.security.Role;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
-import java.util.Arrays;
+import java.util.*;
 
 
 /**
@@ -35,7 +34,7 @@ public class PersonTest {
     @Test
     public void ensureReturnsTrueIfPersonHasTheGivenRole() {
 
-        Person person = new Person();
+        Person person = TestDataCreator.createPerson();
         person.setPermissions(Arrays.asList(Role.USER, Role.BOSS));
 
         Assert.assertTrue("Should return true if the person has the given role", person.hasRole(Role.BOSS));
@@ -45,8 +44,8 @@ public class PersonTest {
     @Test
     public void ensureReturnsFalseIfPersonHasNotTheGivenRole() {
 
-        Person person = new Person();
-        person.setPermissions(Arrays.asList(Role.USER));
+        Person person = TestDataCreator.createPerson();
+        person.setPermissions(Collections.singletonList(Role.USER));
 
         Assert.assertFalse("Should return false if the person has not the given role", person.hasRole(Role.BOSS));
     }
@@ -55,7 +54,7 @@ public class PersonTest {
     @Test
     public void ensureReturnsTrueIfPersonHasTheGivenNotificationType() {
 
-        Person person = new Person();
+        Person person = TestDataCreator.createPerson();
         person.setNotifications(Arrays.asList(MailNotification.NOTIFICATION_USER, MailNotification.NOTIFICATION_BOSS));
 
         Assert.assertTrue("Should return true if the person has the given notification type",
@@ -66,8 +65,8 @@ public class PersonTest {
     @Test
     public void ensureReturnsFalseIfPersonHasNotTheGivenNotificationType() {
 
-        Person person = new Person();
-        person.setNotifications(Arrays.asList(MailNotification.NOTIFICATION_USER));
+        Person person = TestDataCreator.createPerson();
+        person.setNotifications(Collections.singletonList(MailNotification.NOTIFICATION_USER));
 
         Assert.assertFalse("Should return false if the person has not the given notification type",
             person.hasNotificationType(MailNotification.NOTIFICATION_BOSS));
@@ -75,51 +74,99 @@ public class PersonTest {
 
 
     @Test
-    public void ensureDepartmentHeadIsAPrivilegedUser() {
+    public void ensureReturnsEmptyStringAsGravatarURLIfEmailIsEmpty() {
 
-        Person departmentHead = new Person();
-        departmentHead.setPermissions(Arrays.asList(Role.USER, Role.DEPARTMENT_HEAD));
+        Person person = TestDataCreator.createPerson();
+        person.setEmail(null);
 
-        Assert.assertTrue("Department head should be a privileged user", departmentHead.isPrivilegedUser());
+        Assert.assertNotNull("Should not be null", person.getGravatarURL());
+        Assert.assertEquals("Wrong Gravatar URL", "", person.getGravatarURL());
     }
 
 
     @Test
-    public void ensureBossIsAPrivilegedUser() {
+    public void ensureCanReturnGravatarURL() {
 
-        Person boss = new Person();
-        boss.setPermissions(Arrays.asList(Role.USER, Role.BOSS));
+        Person person = TestDataCreator.createPerson();
+        person.setEmail("muster@test.de");
 
-        Assert.assertTrue("Boss should be a privileged user", boss.isPrivilegedUser());
+        Assert.assertNotNull("Should not be null", person.getGravatarURL());
+        Assert.assertNotEquals("Gravatar URL should not be empty", "", person.getGravatarURL());
+        Assert.assertNotEquals("Gravatar URL should differ from mail address", person.getEmail(),
+            person.getGravatarURL());
     }
 
 
     @Test
-    public void ensureOfficeIsAPrivilegedUser() {
+    public void ensurePermissionsAreUnmodifiable() {
 
-        Person office = new Person();
-        office.setPermissions(Arrays.asList(Role.USER, Role.OFFICE));
+        List<Role> modifiableList = new ArrayList<>();
+        modifiableList.add(Role.USER);
 
-        Assert.assertTrue("Office should be a privileged user", office.isPrivilegedUser());
+        Person person = TestDataCreator.createPerson();
+        person.setPermissions(modifiableList);
+
+        try {
+            person.getPermissions().add(Role.BOSS);
+            Assert.fail("Permissions should be unmodifiable!");
+        } catch (UnsupportedOperationException ex) {
+            // Expected
+        }
     }
 
 
     @Test
-    public void ensureUserIsNotAPrivilegedUser() {
+    public void ensureNotificationsAreUnmodifiable() {
 
-        Person user = new Person();
-        user.setPermissions(Arrays.asList(Role.USER));
+        List<MailNotification> modifiableList = new ArrayList<>();
+        modifiableList.add(MailNotification.NOTIFICATION_USER);
 
-        Assert.assertFalse("User should not be a privileged user", user.isPrivilegedUser());
+        Person person = TestDataCreator.createPerson();
+        person.setNotifications(modifiableList);
+
+        try {
+            person.getNotifications().add(MailNotification.NOTIFICATION_BOSS);
+            Assert.fail("Notifications should be unmodifiable!");
+        } catch (UnsupportedOperationException ex) {
+            // Expected
+        }
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ensureThrowsIfSettingPermissionsContainingInactiveRoleAndAnyOtherRole() {
+
+        Person person = TestDataCreator.createPerson();
+
+        person.setPermissions(Arrays.asList(Role.INACTIVE, Role.BOSS));
     }
 
 
     @Test
-    public void ensureInactiveUserIsNotAPrivilegedUser() {
+    public void ensureSettingPermissionsContainingOnlyInactiveRoleIsPossible() {
 
-        Person inactive = new Person();
-        inactive.setPermissions(Arrays.asList(Role.INACTIVE));
+        Person person = TestDataCreator.createPerson();
 
-        Assert.assertFalse("Inactive user should not be a privileged user", inactive.isPrivilegedUser());
+        person.setPermissions(Collections.singletonList(Role.INACTIVE));
+
+        Collection<Role> permissions = person.getPermissions();
+
+        Assert.assertEquals("Wrong number of permissions", 1, permissions.size());
+        Assert.assertTrue("Should contain role", permissions.contains(Role.INACTIVE));
+    }
+
+
+    @Test
+    public void ensureSettingPermissionsContainingMultipleRolesIsPossible() {
+
+        Person person = TestDataCreator.createPerson();
+
+        person.setPermissions(Arrays.asList(Role.USER, Role.BOSS));
+
+        Collection<Role> permissions = person.getPermissions();
+
+        Assert.assertEquals("Wrong number of permissions", 2, permissions.size());
+        Assert.assertTrue("Should contain role", permissions.contains(Role.USER));
+        Assert.assertTrue("Should contain role", permissions.contains(Role.BOSS));
     }
 }

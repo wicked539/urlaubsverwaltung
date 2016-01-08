@@ -1,20 +1,20 @@
 package org.synyx.urlaubsverwaltung.core.sicknote.statistics;
 
-import junit.framework.Assert;
-
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTimeConstants;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.sicknote.SickNote;
 import org.synyx.urlaubsverwaltung.core.sicknote.SickNoteDAO;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -34,25 +34,23 @@ public class SickNoteStatisticsTest {
     private WorkDaysService calendarService;
     private SickNoteDAO sickNoteDAO;
     private List<SickNote> sickNotes;
-    private Person person;
 
     @Before
     public void setUp() throws Exception {
 
         calendarService = Mockito.mock(WorkDaysService.class);
         sickNoteDAO = Mockito.mock(SickNoteDAO.class);
-        sickNotes = new ArrayList<SickNote>();
-        person = new Person();
+        sickNotes = new ArrayList<>();
 
-        SickNote sickNote1 = new SickNote();
-        sickNote1.setStartDate(new DateMidnight(2013, DateTimeConstants.OCTOBER, 7));
-        sickNote1.setEndDate(new DateMidnight(2013, DateTimeConstants.OCTOBER, 11));
-        sickNote1.setPerson(person);
+        Person person = TestDataCreator.createPerson();
 
-        SickNote sickNote2 = new SickNote();
-        sickNote2.setStartDate(new DateMidnight(2013, DateTimeConstants.DECEMBER, 18));
-        sickNote2.setEndDate(new DateMidnight(2014, DateTimeConstants.JANUARY, 3));
-        sickNote2.setPerson(person);
+        SickNote sickNote1 = TestDataCreator.createSickNote(person,
+                new DateMidnight(2013, DateTimeConstants.OCTOBER, 7),
+                new DateMidnight(2013, DateTimeConstants.OCTOBER, 11), DayLength.FULL);
+
+        SickNote sickNote2 = TestDataCreator.createSickNote(person,
+                new DateMidnight(2013, DateTimeConstants.DECEMBER, 18),
+                new DateMidnight(2014, DateTimeConstants.JANUARY, 3), DayLength.FULL);
 
         sickNotes.add(sickNote1);
         sickNotes.add(sickNote2);
@@ -61,10 +59,12 @@ public class SickNoteStatisticsTest {
         Mockito.when(sickNoteDAO.findAllActiveByYear(2013)).thenReturn(sickNotes);
 
         Mockito.when(calendarService.getWorkDays(DayLength.FULL, new DateMidnight(2013, DateTimeConstants.OCTOBER, 7),
-                new DateMidnight(2013, DateTimeConstants.OCTOBER, 11), person)).thenReturn(new BigDecimal("5"));
+                    new DateMidnight(2013, DateTimeConstants.OCTOBER, 11), person))
+            .thenReturn(new BigDecimal("5"));
 
         Mockito.when(calendarService.getWorkDays(DayLength.FULL, new DateMidnight(2013, DateTimeConstants.DECEMBER, 18),
-                new DateMidnight(2013, DateTimeConstants.DECEMBER, 31), person)).thenReturn(new BigDecimal("9"));
+                    new DateMidnight(2013, DateTimeConstants.DECEMBER, 31), person))
+            .thenReturn(new BigDecimal("9"));
 
         statistics = new SickNoteStatistics(2013, sickNoteDAO, calendarService);
     }

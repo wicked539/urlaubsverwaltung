@@ -13,8 +13,8 @@ import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
 import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.application.service.ApplicationService;
-import org.synyx.urlaubsverwaltung.core.calendar.NowService;
 import org.synyx.urlaubsverwaltung.core.calendar.WorkDaysService;
+import org.synyx.urlaubsverwaltung.core.period.NowService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.util.DateUtil;
 
@@ -52,7 +52,7 @@ public class VacationDaysService {
      * relevant for calculation and if it's after April, only the not expiring remaining vacation days are relevant for
      * calculation.</p>
      *
-     * @param  account {@link org.synyx.urlaubsverwaltung.core.account.domain.Account}
+     * @param  account  {@link org.synyx.urlaubsverwaltung.core.account.domain.Account}
      *
      * @return  total number of left vacation days
      */

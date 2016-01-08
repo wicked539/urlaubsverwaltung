@@ -1,19 +1,18 @@
 
 package org.synyx.urlaubsverwaltung.web.person;
 
-
 import org.joda.time.DateMidnight;
 
 import org.springframework.util.Assert;
 
 import org.synyx.urlaubsverwaltung.core.account.domain.Account;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
-import org.synyx.urlaubsverwaltung.core.calendar.Day;
 import org.synyx.urlaubsverwaltung.core.calendar.workingtime.WorkingTime;
-import org.synyx.urlaubsverwaltung.core.mail.MailNotification;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.WeekDay;
+import org.synyx.urlaubsverwaltung.core.person.MailNotification;
 import org.synyx.urlaubsverwaltung.core.person.Person;
+import org.synyx.urlaubsverwaltung.core.person.Role;
 import org.synyx.urlaubsverwaltung.core.util.DateUtil;
-import org.synyx.urlaubsverwaltung.security.Role;
 
 import java.math.BigDecimal;
 
@@ -21,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-
-import static org.synyx.urlaubsverwaltung.security.Role.INACTIVE;
 
 
 /**
@@ -105,7 +102,7 @@ public class PersonForm {
         if (workingTimeOptional.isPresent()) {
             WorkingTime workingTime = workingTimeOptional.get();
 
-            for (Day day : Day.values()) {
+            for (WeekDay day : WeekDay.values()) {
                 Integer dayOfWeek = day.getDayOfWeek();
 
                 DayLength dayLength = workingTime.getDayLengthForWeekDay(dayOfWeek);
@@ -299,42 +296,5 @@ public class PersonForm {
     public void setNotifications(List<MailNotification> notifications) {
 
         this.notifications = notifications;
-    }
-
-
-    public Person generatePerson() {
-
-        Person person = new Person();
-        fillPersonAttributes(person);
-
-        return person;
-    }
-
-
-    public void fillPersonAttributes(Person person) {
-
-        person.setLoginName(loginName);
-        person.setLastName(lastName);
-        person.setFirstName(firstName);
-        person.setEmail(email);
-
-        person.setNotifications(notifications);
-
-        if (personShouldBeSetToInactive(permissions)) {
-            List<Role> onlyInactive = new ArrayList<>();
-            onlyInactive.add(INACTIVE);
-            person.setPermissions(onlyInactive);
-        } else {
-            person.setPermissions(permissions);
-        }
-    }
-
-
-    private boolean personShouldBeSetToInactive(Collection<Role> permissions) {
-
-        return permissions.stream().
-                filter(permission -> permission.equals(INACTIVE)).
-                findFirst().
-                isPresent();
     }
 }

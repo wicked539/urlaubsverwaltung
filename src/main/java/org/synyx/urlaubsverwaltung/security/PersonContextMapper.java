@@ -2,148 +2,126 @@ package org.synyx.urlaubsverwaltung.security;
 
 import org.apache.log4j.Logger;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DirContextOperations;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
 
-import org.synyx.urlaubsverwaltung.core.mail.MailService;
+import org.springframework.stereotype.Component;
+
+import org.springframework.util.Assert;
+
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
-
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
+import org.synyx.urlaubsverwaltung.core.person.Role;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
+
+import javax.naming.NamingException;
 
 
 /**
- * Map granted authorities to application roles described in {@link org.synyx.urlaubsverwaltung.security.Role}.
+ * Map granted authorities to application roles described in {@link Role}.
  *
  * @author  Aljona Murygina - murygina@synyx.de
  */
+@Component
+@ConditionalOnExpression("'${auth}'=='activeDirectory' or '${auth}'=='ldap'")
 public class PersonContextMapper implements UserDetailsContextMapper {
 
     private static final Logger LOG = Logger.getLogger(PersonContextMapper.class);
 
     private final PersonService personService;
-    private final MailService mailService;
+    private final LdapSyncService ldapSyncService;
+    private final LdapUserMapper ldapUserMapper;
 
-    public PersonContextMapper(PersonService personService, MailService mailService) {
+    @Autowired
+    public PersonContextMapper(PersonService personService, LdapSyncService ldapSyncService,
+        LdapUserMapper ldapUserMapper) {
 
         this.personService = personService;
-        this.mailService = mailService;
+        this.ldapSyncService = ldapSyncService;
+        this.ldapUserMapper = ldapUserMapper;
     }
 
     @Override
     public UserDetails mapUserFromContext(DirContextOperations ctx, String username,
         Collection<? extends GrantedAuthority> authorities) {
 
-        Optional<Person> optionalPerson = personService.getPersonByLogin(username);
+        LdapUser ldapUser;
 
-        /**
-         * NOTE: If the system has no user yet, the first person that successfully signs in
-         * is created as user with {@link Role#OFFICE}
-         */
-        boolean noActivePersonExistsYet = personService.getActivePersons().size() == 0;
+        try {
+            ldapUser = ldapUserMapper.mapFromContext(ctx);
+        } catch (InvalidSecurityConfigurationException | NamingException | UnsupportedMemberAffiliationException ex) {
+            LOG.info("User '" + username + "' can not sign in because: " + ex.getMessage());
+            throw new BadCredentialsException("No authentication possible for user = " + username, ex);
+        }
+
+        String login = ldapUser.getUsername();
+
+        Optional<Person> optionalPerson = personService.getPersonByLogin(login);
 
         Person person;
 
-        if (!optionalPerson.isPresent()) {
-            person = createPerson(username, noActivePersonExistsYet);
+        if (optionalPerson.isPresent()) {
+            person = ldapSyncService.syncPerson(optionalPerson.get(), ldapUser.getFirstName(), ldapUser.getLastName(),
+                    ldapUser.getEmail());
         } else {
-            person = optionalPerson.get();
+            person = ldapSyncService.createPerson(login, ldapUser.getFirstName(), ldapUser.getLastName(),
+                    ldapUser.getEmail());
         }
 
-        org.springframework.security.ldap.userdetails.Person.Essence p =
+        /**
+         * NOTE: If the system has no office user yet, grant office permissions to successfully signed in user
+         */
+        boolean noOfficeUserYet = personService.getPersonsByRole(Role.OFFICE).isEmpty();
+
+        // TODO: Think about if this logic could be dangerous?!
+        if (noOfficeUserYet) {
+            ldapSyncService.appointPersonAsOfficeUser(person);
+        }
+
+        org.springframework.security.ldap.userdetails.Person.Essence user =
             new org.springframework.security.ldap.userdetails.Person.Essence(ctx);
 
-        p.setUsername(username);
-        p.setAuthorities(getGrantedAuthorities(person));
+        user.setUsername(login);
+        user.setAuthorities(getGrantedAuthorities(person));
 
-        return p.createUserDetails();
-    }
+        LOG.info("User '" + username + "' has signed in with roles: " + person.getPermissions());
 
-
-    /**
-     * Creates a {@link Person} with the roles {@link Role#OFFICE} and {@link Role#USER}.
-     *
-     * @param  login  of the person to be created
-     *
-     * @return  the created person
-     */
-    Person createPerson(String login, boolean isFirst) {
-
-        Person person = new Person();
-        person.setLoginName(login);
-
-        List<Role> permissions = new ArrayList<>();
-        permissions.add(Role.USER);
-
-        /**
-         * NOTE: the first created person should be able to manage persons and their roles in the application
-         */
-        if (isFirst) {
-            permissions.add(Role.OFFICE);
-        }
-
-        /**
-         * NOTE: Do not change this to
-         *
-         * <pre>
-         *     person.setPermissions(Arrays.asList(Role.USER, Role.OFFICE));
-         * </pre>
-         *
-         * if you don't want to have errors!
-         *
-         */
-        person.setPermissions(permissions);
-
-        try {
-            KeyPair keyPair = CryptoUtil.generateKeyPair();
-            person.setPrivateKey(keyPair.getPrivate().getEncoded());
-            person.setPublicKey(keyPair.getPublic().getEncoded());
-        } catch (NoSuchAlgorithmException ex) {
-            LOG.error("An error occurred while trying to create key pair for user with login " + login, ex);
-            mailService.sendKeyGeneratingErrorNotification(login, ex.getMessage());
-        }
-
-        personService.save(person);
-
-        LOG.info("Successfully auto-created person: " + person.toString());
-
-        return person;
+        return user.createUserDetails();
     }
 
 
     /**
      * Gets the granted authorities using the {@link Role}s of the given {@link Person}.
      *
-     * @param  person  to get the granted authorities for
+     * @param  person  to get the granted authorities for, may not be {@code null}
      *
      * @return  the granted authorities for the person
      */
     Collection<GrantedAuthority> getGrantedAuthorities(Person person) {
 
+        Assert.notNull(person, "Person must be given.");
+
+        Collection<Role> permissions = person.getPermissions();
+
+        if (permissions.isEmpty()) {
+            throw new IllegalStateException("Every user must have at least one role, data seems to be corrupt.");
+        }
+
         Collection<GrantedAuthority> grantedAuthorities = new ArrayList<>();
 
-        if (person != null) {
-            for (final Role role : person.getPermissions()) {
-                grantedAuthorities.add(new GrantedAuthority() {
-
-                        @Override
-                        public String getAuthority() {
-
-                            return role.toString();
-                        }
-                    });
-            }
-        }
+        permissions.stream().forEach(role -> grantedAuthorities.add(role::name));
 
         return grantedAuthorities;
     }
@@ -152,7 +130,7 @@ public class PersonContextMapper implements UserDetailsContextMapper {
     @Override
     public void mapUserToContext(UserDetails user, DirContextAdapter ctx) {
 
-        throw new UnsupportedOperationException("LdapUserDetailsMapper only supports reading from a context. Please"
+        throw new UnsupportedOperationException("PersonContextMapper only supports reading from a context. Please"
             + "use a subclass if mapUserToContext() is required.");
     }
 }

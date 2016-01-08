@@ -13,14 +13,16 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.department.DepartmentService;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.person.MailNotification;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
 import org.synyx.urlaubsverwaltung.core.settings.MailSettings;
 import org.synyx.urlaubsverwaltung.core.settings.Settings;
 import org.synyx.urlaubsverwaltung.core.settings.SettingsService;
+import org.synyx.urlaubsverwaltung.test.TestDataCreator;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +55,7 @@ public class MailServiceImplTest {
         mailService = new MailServiceImpl(mailSender, velocityEngine, personService, departmentService, settingsService,
                 "");
 
-        Person person = new Person();
+        Person person = TestDataCreator.createPerson();
 
         application = new Application();
         application.setPerson(person);
@@ -72,7 +74,7 @@ public class MailServiceImplTest {
 
         settings.getMailSettings().setActive(false);
 
-        Person person = new Person("muster", "Muster", "Max", "max@muster.de");
+        Person person = TestDataCreator.createPerson();
 
         mailService.sendEmail(Collections.singletonList(person), "subject", "text");
 
@@ -85,7 +87,7 @@ public class MailServiceImplTest {
 
         MailSettings mailSettings = settings.getMailSettings();
 
-        Person person = new Person("muster", "Muster", "Max", "max@muster.de");
+        Person person = TestDataCreator.createPerson();
 
         mailService.sendEmail(Collections.singletonList(person), "subject", "text");
 
@@ -99,9 +101,9 @@ public class MailServiceImplTest {
     @Test
     public void ensureMailIsSentToAllRecipientsThatHaveAnEmailAddress() {
 
-        Person person = new Person("muster", "Muster", "Max", "max@muster.de");
-        Person anotherPerson = new Person("mmuster", "Muster", "Marlene", "marlene@muster.de");
-        Person personWithoutMailAddress = new Person("nomail", "Mail", "No", null);
+        Person person = TestDataCreator.createPerson("muster", "Max", "Mustermann", "max@muster.de");
+        Person anotherPerson = TestDataCreator.createPerson("mmuster", "Marlene", "Muster", "max@muster.de");
+        Person personWithoutMailAddress = TestDataCreator.createPerson("nomail", "No", "Mail", null);
 
         ArgumentCaptor<SimpleMailMessage> mailMessageArgumentCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
 
@@ -123,7 +125,8 @@ public class MailServiceImplTest {
     @Test
     public void ensureNoMailIsSentIfTheRecipientsHaveNoMailAddress() {
 
-        Person person = new Person("muster", "Muster", "Max", null);
+        Person person = TestDataCreator.createPerson();
+        person.setEmail(null);
 
         mailService.sendEmail(Collections.singletonList(person), "Mail Subject", "Mail Body");
 
@@ -143,8 +146,8 @@ public class MailServiceImplTest {
     @Test
     public void ensureSendsNewApplicationNotificationToDepartmentHeads() {
 
-        Person boss = new Person();
-        Person departmentHead = new Person();
+        Person boss = TestDataCreator.createPerson("boss");
+        Person departmentHead = TestDataCreator.createPerson("departmentHead");
 
         Mockito.when(personService.getPersonsWithNotificationType(MailNotification.NOTIFICATION_BOSS))
             .thenReturn(Collections.singletonList(boss));
@@ -172,8 +175,8 @@ public class MailServiceImplTest {
     @Test
     public void ensureSendsRemindNotificationToDepartmentHeads() {
 
-        Person boss = new Person();
-        Person departmentHead = new Person();
+        Person boss = TestDataCreator.createPerson("boss");
+        Person departmentHead = TestDataCreator.createPerson("departmentHead");
 
         Mockito.when(personService.getPersonsWithNotificationType(MailNotification.NOTIFICATION_BOSS))
             .thenReturn(Collections.singletonList(boss));

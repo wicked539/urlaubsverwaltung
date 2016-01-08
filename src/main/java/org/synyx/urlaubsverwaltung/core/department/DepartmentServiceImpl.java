@@ -1,5 +1,7 @@
 package org.synyx.urlaubsverwaltung.core.department;
 
+import org.apache.log4j.Logger;
+
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 
@@ -11,7 +13,7 @@ import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
 import org.synyx.urlaubsverwaltung.core.application.service.ApplicationService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
-import org.synyx.urlaubsverwaltung.security.Role;
+import org.synyx.urlaubsverwaltung.core.person.Role;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class DepartmentServiceImpl implements DepartmentService {
+
+    private static final Logger LOG = Logger.getLogger(DepartmentServiceImpl.class);
 
     private final DepartmentDAO departmentDAO;
     private final ApplicationService applicationService;
@@ -50,9 +54,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public void create(Department department) {
 
-        department.setLastModification(DateTime.now());
-
         departmentDAO.save(department);
+
+        LOG.info("Created department: " + department.toString());
     }
 
 
@@ -62,16 +66,18 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setLastModification(DateTime.now());
 
         departmentDAO.save(department);
+
+        LOG.info("Updated department: " + department.toString());
     }
 
 
     @Override
     public void delete(Integer departmentId) {
 
-        if (departmentDAO.getOne(departmentId) != null) {
-            departmentDAO.delete(departmentId);
+        if (departmentDAO.findOne(departmentId) == null) {
+            LOG.info("No department found for ID = " + departmentId + ", deletion is not necessary.");
         } else {
-            throw new IllegalStateException("Repository does not contain a department with given id");
+            departmentDAO.delete(departmentId);
         }
     }
 
@@ -114,52 +120,52 @@ public class DepartmentServiceImpl implements DepartmentService {
                             .filter(application ->
                                         application.hasStatus(ApplicationStatus.ALLOWED)
                                         || application.hasStatus(ApplicationStatus.WAITING))
-                                .collect(Collectors.toList())));
+                            .collect(Collectors.toList())));
 
-            return departmentApplications;
-        }
-
-
-        private List<Person> getMembersOfAssignedDepartments(Person member) {
-
-            Set<Person> relevantPersons = new HashSet<>();
-            List<Department> departments = getAssignedDepartmentsOfMember(member);
-
-            for (Department department : departments) {
-                List<Person> members = department.getMembers();
-                relevantPersons.addAll(members);
-            }
-
-            return new ArrayList<>(relevantPersons);
-        }
-
-
-        @Override
-        public List<Person> getManagedMembersOfDepartmentHead(Person departmentHead) {
-
-            Set<Person> relevantPersons = new HashSet<>();
-            List<Department> departments = getManagedDepartmentsOfDepartmentHead(departmentHead);
-
-            for (Department department : departments) {
-                List<Person> members = department.getMembers();
-                relevantPersons.addAll(members);
-            }
-
-            return new ArrayList<>(relevantPersons);
-        }
-
-
-        @Override
-        public boolean isDepartmentHeadOfPerson(Person departmentHead, Person person) {
-
-            if (departmentHead.hasRole(Role.DEPARTMENT_HEAD)) {
-                List<Person> members = getManagedMembersOfDepartmentHead(departmentHead);
-
-                if (members.contains(person)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        return departmentApplications;
     }
+
+
+    private List<Person> getMembersOfAssignedDepartments(Person member) {
+
+        Set<Person> relevantPersons = new HashSet<>();
+        List<Department> departments = getAssignedDepartmentsOfMember(member);
+
+        for (Department department : departments) {
+            List<Person> members = department.getMembers();
+            relevantPersons.addAll(members);
+        }
+
+        return new ArrayList<>(relevantPersons);
+    }
+
+
+    @Override
+    public List<Person> getManagedMembersOfDepartmentHead(Person departmentHead) {
+
+        Set<Person> relevantPersons = new HashSet<>();
+        List<Department> departments = getManagedDepartmentsOfDepartmentHead(departmentHead);
+
+        for (Department department : departments) {
+            List<Person> members = department.getMembers();
+            relevantPersons.addAll(members);
+        }
+
+        return new ArrayList<>(relevantPersons);
+    }
+
+
+    @Override
+    public boolean isDepartmentHeadOfPerson(Person departmentHead, Person person) {
+
+        if (departmentHead.hasRole(Role.DEPARTMENT_HEAD)) {
+            List<Person> members = getManagedMembersOfDepartmentHead(departmentHead);
+
+            if (members.contains(person)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

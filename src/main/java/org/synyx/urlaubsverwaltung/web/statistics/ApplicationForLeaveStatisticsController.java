@@ -17,12 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import org.synyx.urlaubsverwaltung.DateFormat;
+import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
 import org.synyx.urlaubsverwaltung.core.department.DepartmentService;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.person.PersonService;
+import org.synyx.urlaubsverwaltung.core.person.Role;
+import org.synyx.urlaubsverwaltung.core.util.DateFormat;
 import org.synyx.urlaubsverwaltung.core.util.DateUtil;
-import org.synyx.urlaubsverwaltung.security.Role;
 import org.synyx.urlaubsverwaltung.security.SecurityRules;
 import org.synyx.urlaubsverwaltung.security.SessionService;
 import org.synyx.urlaubsverwaltung.web.ControllerConstants;
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
  *
  * @author  Aljona Murygina - murygina@synyx.de
  */
-@RequestMapping("/application")
+@RequestMapping("/web/application")
 @Controller
 public class ApplicationForLeaveStatisticsController {
 
@@ -83,14 +84,14 @@ public class ApplicationForLeaveStatisticsController {
 
         List<Person> persons = getRelevantPersons();
 
-        List<ApplicationForLeaveStatistics> statistics = (persons.stream().map(person ->
-                            applicationForLeaveStatisticsBuilder.build(person, fromDate, toDate))
-                .collect(Collectors.toList()));
+        List<ApplicationForLeaveStatistics> statistics = persons.stream().map(person ->
+                    applicationForLeaveStatisticsBuilder.build(person, fromDate, toDate)).collect(Collectors.toList());
 
         model.addAttribute("from", fromDate);
         model.addAttribute("to", toDate);
         model.addAttribute("statistics", statistics);
         model.addAttribute("filterRequest", new FilterRequest());
+        model.addAttribute("vacationTypes", VacationType.values());
 
         return "application/app_statistics";
     }

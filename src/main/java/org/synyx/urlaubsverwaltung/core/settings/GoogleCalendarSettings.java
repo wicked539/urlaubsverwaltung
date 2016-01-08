@@ -27,6 +27,16 @@ public class GoogleCalendarSettings {
     @Column(name = "calendar_google_clientSecret")
     private String clientSecret;
 
+    @Column(name = "calendar_google_serviceAccount")
+    private String serviceAccount;
+
+    @Column(name = "calendar_google_calendarId")
+    private String calendarId;
+
+    @Column(name = "calendar_google_pkcs12KeyFile")
+    private String pkcs12KeyFile;
+
+
     public boolean isActive() {
 
         return active;
@@ -85,4 +95,41 @@ public class GoogleCalendarSettings {
 
         this.clientSecret = clientSecret;
     }
+
+
+    public String getServiceAccount() {
+
+        return serviceAccount;
+    }
+
+
+    public void setServiceAccount(String serviceAccount) {
+
+        this.serviceAccount = serviceAccount;
+    }
+
+
+    public String getCalendarId() {
+
+        return calendarId;
+    }
+
+
+    public void setCalendarId(String calendarId) {
+
+        this.calendarId = calendarId;
+    }
+
+
+    public String getPkcs12KeyFile() {
+
+        return pkcs12KeyFile;
+    }
+
+
+    public void setPkcs12KeyFile(String pkcs12KeyFile) {
+
+        this.pkcs12KeyFile = pkcs12KeyFile;
+    }
+
 }

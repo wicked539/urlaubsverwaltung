@@ -8,8 +8,8 @@ import org.joda.time.DateTimeConstants;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
-import org.synyx.urlaubsverwaltung.core.calendar.Day;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
+import org.synyx.urlaubsverwaltung.core.period.WeekDay;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 
 import java.util.Date;
@@ -34,33 +34,28 @@ public class WorkingTime extends AbstractPersistable<Integer> {
     private Person person;
 
     @Enumerated(EnumType.STRING)
-    private DayLength monday;
+    private DayLength monday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength tuesday;
+    private DayLength tuesday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength wednesday;
+    private DayLength wednesday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength thursday;
+    private DayLength thursday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength friday;
+    private DayLength friday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength saturday;
+    private DayLength saturday = DayLength.ZERO;
 
     @Enumerated(EnumType.STRING)
-    private DayLength sunday;
+    private DayLength sunday = DayLength.ZERO;
 
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date validFrom;
-
-    public WorkingTime() {
-
-        setAllDayLengthsToZero();
-    }
 
     public void setWorkingDays(List<Integer> workingDays, DayLength dayLength) {
 
@@ -76,7 +71,7 @@ public class WorkingTime extends AbstractPersistable<Integer> {
 
     public boolean hasWorkingDays(List<Integer> workingDays) {
 
-        for (Day day : Day.values()) {
+        for (WeekDay day : WeekDay.values()) {
             int dayOfWeek = day.getDayOfWeek();
 
             DayLength dayLength = getDayLengthForWeekDay(dayOfWeek);

@@ -3,50 +3,66 @@
 
 ## Urlaubsverwaltung
 
-* [Übersicht](https://github.com/synyx/urlaubsverwaltung#übersicht)
-* [Installation](https://github.com/synyx/urlaubsverwaltung#installation)
-* [Konfiguration](https://github.com/synyx/urlaubsverwaltung#konfiguration)
-    * [Umgebungen](https://github.com/synyx/urlaubsverwaltung#umgebungen)
-    * [Authentifizierung](https://github.com/synyx/urlaubsverwaltung#authentifizierung)
-    * [Konfiguration ab Version 2.7.0](https://github.com/synyx/urlaubsverwaltung#konfiguration-ab-version-270)
-    * [Konfiguration bis Version 2.6.4](https://github.com/synyx/urlaubsverwaltung#konfiguration-bis-version-264)
-* [Entwicklung](https://github.com/synyx/urlaubsverwaltung#entwicklung)
-* [Hinweise zu Versionen](https://github.com/synyx/urlaubsverwaltung#hinweise-zu-versionen)
-* [Technologien](https://github.com/synyx/urlaubsverwaltung#technologien)
-* [Lizenz](https://github.com/synyx/urlaubsverwaltung#lizenz)
+* [Übersicht](#übersicht)
+    * [Demo System](#demo-system)
+    * [Blog Posts](#blog-posts)
+    * [FAQ](#faq)
+    * [Berechtigungen](#berechtigungen)
+* [Installation](#installation)
+* [Entwicklung](#entwicklung)
+* [Hinweise zu Versionen](#hinweise-zu-versionen)
+* [Technologien](#technologien)
+* [Lizenz](#lizenz)
 
 ---
 
 ## Übersicht
 
-Die Urlaubsverwaltung ist eine Web-Anwendung, die es ermöglicht, Urlaubsanträge von Mitarbeitern elektronisch zu verwalten. Mitarbeiter stellen Urlaubsanträge, die von den jeweils Berechtigten genehmigt oder abgelehnt werden.
-Die Anwendung bietet eine Übersicht über die bestehenden Urlaubsanträge und ermöglicht außerdem Überblick und Pflege von Urlaubsanspruch und Anzahl verbleibender Urlaubstage der Mitarbeiter. Zusätzlich können Krankmeldungen erfasst und überblickt werden.
+Die Urlaubsverwaltung ist eine Web-Anwendung, die es ermöglicht, Urlaubsanträge von Mitarbeitern elektronisch zu
+verwalten. Mitarbeiter stellen Urlaubsanträge, die von den jeweils Berechtigten genehmigt oder abgelehnt werden.
+Die Anwendung bietet eine Übersicht über die bestehenden Urlaubsanträge und ermöglicht außerdem Überblick und Pflege
+von Urlaubsanspruch und Anzahl verbleibender Urlaubstage der Mitarbeiter. Zusätzlich können Krankmeldungen erfasst und
+überblickt werden.
 
 ![Screenshot Urlaubsverwaltung](http://synyx.de/images/opensource/screen_01.jpg)
 
 #### Demo System
 
-Zum Ausprobieren der Anwendung gibt es ein [Demo System](http://urlaubsverwaltung-demo.synyx.de) mit einem Testbenutzer.
+Zum Ausprobieren der Anwendung gibt es ein [Demo System](http://urlaubsverwaltung-demo.synyx.de) mit Testbenutzern für
+die unterschiedlichen Rollen:
 
-* Benutzername: test
-* Passwort: secret
+| Rolle             | Benutzername  | Passwort |
+| ----------------- | ------------- | -------- |
+| Office            | test          | secret   |
+| Chef              | testBoss      | secret   |
+| Abteilungsleiter  | testHead      | secret   |
+| Benutzer          | testUser      | secret   |
 
-#### Blogposts
+#### Blog Posts
 
-Weitere Informationen zur Geschichte und Entwicklung der Urlaubsverwaltung findet man im [synyx Blog](http://blog.synyx.de):
+Weitere Informationen zur Geschichte und Entwicklung der Urlaubsverwaltung findet man im
+[synyx Blog](http://blog.synyx.de):
 
 * [Stand November 2011](http://blog.synyx.de/2011/11/elektronische-urlaubsverwaltung-made-by-youngsters/)
 * [Stand November 2012](http://blog.synyx.de/2012/11/urlaubsverwaltung-was-hat-sich-getan/)
 * [Stand Oktober 2014](http://blog.synyx.de/2014/10/urlaubsverwaltung-goes-mobile/)
 
+#### FAQ
+
+Für Fragen, die bei der Benutzung der Urlaubsverwaltung aufkommen können, gibt es ein
+[FAQ](https://github.com/synyx/urlaubsverwaltung/wiki).
+Der Fragenkatalog erhebt keinen Anspruch auf Vollständigkeit und befindet sich im ständigen Wachstum und in Veränderung.
+
 #### Berechtigungen
 
 In der Urlaubsverwaltung gibt es aktuell folgende Arten von Berechtigungen:
 
-* **inaktiv**: hat keinen Zugang mehr zur Urlaubsverwaltung (bestehende Daten des Benutzers bleiben zur Archivierung bestehen)
+* **inaktiv**: hat keinen Zugang mehr zur Urlaubsverwaltung (Daten des Benutzers bleiben zur Archivierung bestehen)
 * **User**: darf Urlaub für sich selbst beantragen
-* **Boss**: darf Urlaubsanträge von Mitarbeitern einsehen, genehmigen und ablehnen
-* **Office**: darf Mitarbeiterdaten verwalten, Urlaub für Mitarbeiter beantragen und Urlaubsanträge stornieren
+* **Abteilungsleiter**: darf Urlaubsanträge für die Benutzer seiner Abteilungen einsehen, genehmigen und ablehnen
+* **Chef**: darf Urlaubsanträge aller Benutzer einsehen, genehmigen und ablehnen
+* **Office**: darf Einstellungen zur Anwendung vornehmen, Mitarbeiter verwalten, Urlaub für Mitarbeiter
+beantragen/stornieren und Krankmeldungen pflegen
 
 Eine aktive Person kann eine oder mehrere Rollen innehaben.
 
@@ -54,176 +70,11 @@ Eine aktive Person kann eine oder mehrere Rollen innehaben.
 
 ## Installation
 
-Die folgende Anleitung beschreibt die Installation der Urlaubsverwaltung auf einem [Tomcat Server](http://tomcat.apache.org/).
-
-#### Systemvoraussetzungen
-
-* Apache Tomcat Version 7
-* JDK 8
-* Maven 3.3
-* MySQL Datenbank
-
-#### Download
-
-Die Anwendung steht auf Github als ZIP oder Tarball zum Download zur Verfügung. Am Besten [hier](https://github.com/synyx/urlaubsverwaltung/releases) die aktuellste Version auswählen und downloaden.
-
-#### Erstellen der WAR-Datei
-
-Nach dem Entpacken der Zip oder Tarball Datei kann die [WAR-Datei](http://de.wikipedia.org/wiki/Web_Application_Archive) mithilfe von [Maven](http://maven.apache.org/) erstellt werden.
-Dies erfolgt durch Ausführen folgenden Befehls im entpackten Root-Verzeichnis der Anwendung:
-
-<pre>mvn clean install</pre>
-
-Die erstellte WAR-Datei `urlaubsverwaltung-X.X.X-SNAPSHOT.war` findet man im neu erstellten `target/` Verzeichnis des Projekts.
-
-#### Deployment unter Tomcat
-
-Die erstellte WAR-Datei kann nun im installierten Tomcat Server deployed werden.
-Dazu kopiert man die WAR-Datei in das Tomcat Verzeichnis `/webapps` und benennt sie in `urlaubsverwaltung.war` um ([weiterführende Informationen zum Tomcat Deployment](http://tomcat.apache.org/tomcat-6.0-doc/deployer-howto.html)).
-
-#### Starten der Anwendung
-
-Damit man die Anwendung möglichst schnell ausprobieren kann, bietet es sich an die Anwendung in der Umgebung Entwicklung (`env=dev`) zu starten.
-
-Zusätzlich wird die standardmäßige Authentifizierung (`auth=default`) angegeben.
-
-Hierzu wird `CATALINA_OPTS` folgendermaßen gesetzt:
-
-<pre>export CATALINA_OPTS="-Denv=dev -Dauth=default"</pre>
-
-#### Aufrufen der Anwendung
-
-Wenn die Anwendung im Tomcat Verzeichnis `webapps/` mit dem Dateinamen `urlaubsverwaltung.war` deployed wurde, ist sie nach dem Starten des Tomcat unter
-
-`<servername>:8080/urlaubsverwaltung`
-
-erreichbar.
-
-Der erste Benutzer, der sich erfolgreich im System einloggt, wird in der Urlaubsverwaltung mit der Rolle Office angelegt.
-Dies ermöglicht Benutzer- und Rechteverwaltung innerhalb der Anwendung und das Pflegen der Einstellungen für die Anwendung.
-
----
-
-## Konfiguration
-
-#### Umgebungen
-
-Die Anwendung verfügt über **drei** verschiedene Umgebungsmöglichkeiten:
-
-* `dev`
-    * zum lokalen Entwickeln
-    * nutzt eine H2-Datenbank
-    * legt Testdaten an
-* `test`
-    * zum Testen der Anwendung
-    * nutzt eine MySQL-Datenbank
-    * legt keine Testdaten an
-* `prod`
-    * zum Ausführen der produktiven Anwendung
-    * nutzt eine MySQL-Datenbank
-    * legt keine Testdaten an
-
-##### Umgebung aktivieren
-
-Damit die Anwendung in einer Umgebung gestartet wird, muss man in den `CATALINA_OPTS` die System-Property `env` auf `dev`, `test` oder `prod` setzen:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=UMGEBUNG"</pre>
-
-#### Authentifizierung
-
-Die Anwendung verfügt über **drei** verschiedene Authentifizierungsmöglichkeiten:
-
-* `default`
-    * für lokale Entwicklungsumgebung
-* `ldap`
-    * Authentifizierung via LDAP
-    * Es müssen die LDAP URL, die LDAP Base und LDAP User DN Patterns konfiguriert sein, damit eine Authentifizierung via LDAP möglich ist.
-* `activeDirectory`
-    * Authentifizierung via Active Directory
-    * Es müssen die Active Directory Domain und LDAP URL konfiguriert sein, damit eine Authentifizierung via Active Directory möglich ist.
-
-#### Konfiguration ab Version 2.7.0
-
-##### Überschreiben der Properties
-
-Die Anwendung besitzt im Verzeichnis `src/main/resources` jeweils eine `.properties` Datei zur Konfiguration der jeweiligen [Umgebung](https://github.com/synyx/urlaubsverwaltung#umgebungen).
-
-* eine standardmäßige `application.properties`
-* `application-test.properties`
-* `application-prod.properties`
-
-Diese beinhalten gewisse Grundeinstellungen und Standardwerte. Diese allein reichen für die Produktivnahme der Anwendung allerdings noch nicht aus.
-Spezifische Konfigurationen wie z.B. die Datenbank Einstellungen müssen durch eine eigene Properties-Datei hinterlegt werden.
-Dazu kann die Beispieldatei im Root-Verzeichnis der Anwendung `urlaubsverwaltung.properties` als Vorlage verwendet werden, um die gewünschten Einstellungen zu überschreiben.
-
-Damit die eigene Konfigurationsdatei benutzt wird, gibt es zwei Möglichkeiten:
-
-* Eine eigene Properties-Datei erstellen und diese unter dem Namen `urlaubsverwaltung.properties` in das `/conf` Verzeichnis unterhalb von `CATALINA_BASE` ablegen, z.B. `tomcat/conf/urlaubsverwaltung.properties`. Danach den Tomcat neu starten.
-
-* Die erstellte Properties-Datei an einem beliebigen Ort ablegen und mithilfe der System Property `config` innerhalb der `CATALINA_OPTS` den absoluten Pfad der Konfigurationsdatei angeben:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Dconfig=/home/urlaub/config/my.properties"</pre>
-
-##### Produktivumgebung aktivieren
-
-Die Anwendung mit dem Parameter `-Denv=prod` starten:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=prod"</pre>
-
-###### LDAP
-
-Um LDAP zur Authentifizierung zu nutzen, zusätzlich den Parameter `-Dauth=ldap` angeben:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=prod -Dauth=ldap"</pre>
-
-###### Active Directory
-
-Um Active Directory zur Authentifizierung zu nutzen, zusätzlich den Parameter `-Dauth=activeDirectory` angeben:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=prod -Dauth=activeDirectory"</pre>
-
-###### Microsoft Exchange Kalender
-
-Um die erstellten Urlaubs- und Krankmeldungstermine mit einem Microsoft Exchange Kalender zu synchronisieren, zusätzlich den Parameter `-Dcalendar=ews` angeben:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=prod -Dauth=activeDirectory -Dcalendar=ews"</pre>
-
-#### Konfiguration bis Version 2.6.4
-
-##### Überschreiben der Properties
-
-Die Anwendung besitzt im Verzeichnis `src/main/resources` mehrere Properties Dateien, die zur Konfiguration genutzt werden.
-
-* `config.properties` u.a. Konfiguration von LDAP
-* `db.properties` Konfiguration der Datenbank (im `prod` Environment wird die Datei `db.prod.properties` herangezogen)
-* `mail.properties` Konfiguration zum Mailversand (im `prod` Environment wird die Datei `mail.prod.properties` herangezogen)
-* `business.properties` Individuelle Regelungen wie bspw. maximal möglicher Jahresurlaub
-
-Die vorhandenen Properties können entweder vor dem Erstellen der WAR-Datei direkt innerhalb der oben genannten Dateien angepasst werden oder aber über durch Setzen der dort definierten globalen Variablen.
-
-###### Beispiel:
-
-<pre>export UV_DB_URL=jdbc:mysql://127.0.0.1:3306/urlaub</pre>
-
-##### Produktivumgebung aktivieren
-
-Die Anwendung mit dem Parameter `-Denv=prod` starten:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Denv=prod"</pre>
-
-##### Authentifizierung
-
-###### LDAP
-
-Die Anwendung mit dem Parameter `-Dspring.profiles.active=ldap` starten:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=ldap"</pre>
-
-###### Active Directory
-
-Die Anwendung mit dem Parameter `-Dspring.profiles.active=activeDirectory` starten:
-
-<pre>export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=activeDirectory"</pre>
+Um eine aktuelle Version der Urlaubsverwaltung zu installieren, bitte [diese Anleitung](INSTALLATION_AS_JAR.md)
+befolgen.
+
+Falls noch eine ältere Version (< 2.12.0) der Urlaubsverwaltung verwendet hier, können Details zur Installation und
+Konfiguration [hier](INSTALLATION_AS_WAR.md) nachgelesen werden.
 
 ---
 
@@ -237,75 +88,93 @@ Im Folgenden werden die durchzuführenden Schritte beschrieben, wenn man an der 
 
 #### Anwendung starten
 
-Man kann die Anwendung lokal mit dem Maven Jetty Plugin starten.
-Ohne weitere Angabe wird das Development-Environment genutzt, d.h. es wird eine H2-Datenbank verwendet.
+Die Urlaubsverwaltung ist eine [Spring Boot](http://projects.spring.io/spring-boot/) Anwendung und kann mit dem Maven
+Plugin gestartet werden:
 
-<pre>mvn jetty:run</pre>
-
-Im Development-Environment werden für Entwicklungszwecke Benutzer, Urlaubsanträge und Krankmeldungen angelegt.
-Man kann sich in dieser Umgebung ebenfalls mit dem Testbenutzer `test/secret` anmelden.
+<pre>mvn clean spring-boot:run</pre>
 
 Im Browser lässt sich die Anwendung dann über `http://localhost:8080/` ansteuern.
+
+Ohne weitere Anpassung der Standardkonfiguration wird eine H2-Datenbank verwendet und es werden Testdaten angelegt,
+d.h. Benutzer, Urlaubsanträge und Krankmeldungen. Daher kann man sich in der Weboberfläche nun mit verschiedenen
+Testbenutzern anmelden:
+
+* `testUser/secret`: Benutzer mit der Rolle `User`
+* `testBoss/secret`: Benutzer mit der Rolle `Boss`
+* `testHead/secret`: Benutzer mit der Rolle `DepartmentHead`
+* `test/secret`: Benutzer mit der Rolle `Office`
+
+#### Anlegen von Testdaten deaktivieren
+
+Möchte man, dass beim Starten der Anwendung keine Testdaten generiert werden, muss man die Property `testdata.create`
+in den `application.properties` auf `false` setzen.
+
+#### H2 Web Konsole
+
+Die Standardkonfiguration sorgt dafür, dass eine H2 Web Konsole aktiv ist. Diese kann standardmäßig erreicht werden
+unter:
+
+<pre>localhost:11115</pre>
+
+Die H2 Konfigurationen können in der `application.properties` überschrieben werden.
 
 #### API
 
 Die Urlaubsverwaltung verfügt über eine API, die unter `http://localhost:8080/api` erreichbar ist.
 
-#### Environments
-
-Siehe [Umgebungen](https://github.com/synyx/urlaubsverwaltung#umgebungen)
-
-Standardmäßig ohne jegliche Angabe wird als Environment `dev` genutzt. Möchte man ein anderes Environment nutzen, muss man beim Starten des Maven Jetty Plugins die `env` Property mitgeben, z.B.:
-
-<pre>mvn jetty:run -Denv=test</pre>
-
 #### Authentifizierung
 
-Siehe [Authentifizierung](https://github.com/synyx/urlaubsverwaltung#authentifizierung)
+Siehe [Authentifizierung](INSTALLATION_AS_JAR.md#authentifizierung)
 
-##### Authentifizierung für lokale Entwicklungsumgebung
+Möchte man LDAP oder Active Directory zur Authentifizierung nutzen, setzt man die Property `auth` entweder als System
+oder man konfiguriert diese in den `application.properties`.
 
-Möchte man die Anwendung lokal mit generierten Testdaten bei sich laufen lassen, reicht es folgenden Befehl auszuführen:
-
-<pre>mvn jetty:run</pre>
-
-Man kann man sich nun mit verschiedenen Testbenutzern anmelden:
-
-* `testUser/secret`: Benutzer mit der User Rolle
-* `testBoss/secret`: Benutzer mit der Boss Rolle
-* `test/secret`: Benutzer mit der Office Rolle
+Hinweis: Die Verbindung zum LDAP / Active Directory muss dafür selbstverständlich korrekt in den
+`application.properties` konfiguriert sein.
 
 ##### LDAP
 
 Die Anwendung mit dem Parameter `-Dauth=ldap` starten:
 
-<pre>mvn jetty:run -Dauth=ldap</pre>
+<pre>mvn clean spring-boot:run -Dauth=ldap</pre>
+
+Oder die Property `auth` in den `application.properties` setzen:
+
+<pre>auth=ldap</pre>
 
 ##### Active Directory
 
 Die Anwendung mit dem Parameter `-Dauth=activeDirectory` starten:
 
-<pre>mvn jetty:run -Dauth=activeDirectory</pre>
+<pre>mvn clean spring-boot:run -Dauth=activeDirectory</pre>
 
-##### Kombination
+Oder die Property `auth` in den `application.properties` setzen:
 
-Selbstverständlich können beide Properties gleichzeitig gesetzt werden, zum Beispiel:
-
-<pre>mvn jetty:run -Denv=test -Dauth=ldap</pre>
+<pre>auth=activeDirectory</pre>
 
 ---
 
 ## Hinweise zu Versionen
 
-#### Version 2.2.1
+#### Version 2.12.0
 
-Wenn man die Urlaubsverwaltung schon länger nutzt und auf Version 2.2.1 oder höher updaten möchte, muss sichergestellt sein, dass in der Datenbank keine Person mit gleichem Vor- und Nachnamen existiert. Dies führt ansonsten zu einem Problem beim Update des Datenbankschemas und die Anwendung kann nicht starten.
+Ab dieser Version ist die Anwendung eine [Spring Boot](http://projects.spring.io/spring-boot/) Anwendung, d.h. sie wird
+nicht mehr als WAR in einem Tomcat installiert, sondern als JAR ausgeführt.
 
 #### Version 2.7.0
 
-Die Anwendung hat nicht mehr mehrere unterschiedliche Properties-Dateien, sondern je eine `application.properties` pro Umgebung.
-Außerdem heißt die System Property für die Authentifizierungsmethode nicht mehr `spring.profiles.active`, sondern `auth`.
-Die fachlichen Einstellungen werden nicht mehr in einer Properties-Datei gepflegt, sondern innerhalb der Anwendung selbst unter dem Menüpunkt "Einstellungen".
+Die Anwendung hat nicht mehr mehrere unterschiedliche Properties-Dateien, sondern je eine `application.properties` pro
+Umgebung. Außerdem heißt die System Property für die Authentifizierungsmethode nicht mehr `spring.profiles.active`,
+sondern `auth`. Die fachlichen Einstellungen werden nicht mehr in einer Properties-Datei gepflegt, sondern innerhalb
+der Anwendung selbst unter dem Menüpunkt "Einstellungen".
+
+#### Version 2.2.1
+
+Wenn man die Urlaubsverwaltung schon länger nutzt und auf Version 2.2.1 oder höher updaten möchte, muss sichergestellt
+sein, dass in der Datenbank keine Person mit gleichem Vor- und Nachnamen existiert. Dies führt ansonsten zu einem
+Problem beim Update des Datenbankschemas und die Anwendung kann nicht starten.
+
+---
 
 ## Technologien
 
@@ -314,10 +183,13 @@ Zur Ermittlung von Feiertagen wird das Framework [Jollyday](http://jollyday.sour
 Das Frontend beinhaltet Elemente von [Bootstrap](http://getbootstrap.com/) gewürzt mit einer Prise
 [jQuery](http://jquery.com/) und [Font Awesome](http://fontawesome.io/).
 Für die Darstellung der Benutzer Avatare wird [Gravatar](http://de.gravatar.com/) benutzt.
-Zur Synchronisation der Urlaubs- und Krankmeldungstermine mit einem Microsoft Exchange Kalender wird die [EWS JAVA API](https://github.com/OfficeDev/ews-java-api) genutzt.
+Zur Synchronisation der Urlaubs- und Krankmeldungstermine mit einem Microsoft Exchange Kalender wird die
+[EWS JAVA API](https://github.com/OfficeDev/ews-java-api) genutzt.
 
 ## Lizenz
 
-[synyx/urlaubsverwaltung](http://github.com/synyx/urlaubsverwaltung) is licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+[synyx/urlaubsverwaltung](http://github.com/synyx/urlaubsverwaltung) is licensed under the
+[Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
-Alle Logos, Marken- und Warenzeichen unterliegen **nicht** der Apache License 2.0 und dürfen nur mit schriftlicher Genehmigung von [synyx](http://www.synyx.de/) weiterverwendet werden.
+Alle Logos, Marken- und Warenzeichen unterliegen **nicht** der Apache License 2.0 und dürfen nur mit schriftlicher
+Genehmigung von [synyx](http://www.synyx.de/) weiterverwendet werden.

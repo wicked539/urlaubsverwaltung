@@ -4,8 +4,8 @@ import org.joda.time.DateMidnight;
 
 import org.synyx.urlaubsverwaltung.core.application.domain.Application;
 import org.synyx.urlaubsverwaltung.core.application.domain.ApplicationStatus;
-import org.synyx.urlaubsverwaltung.core.application.domain.DayLength;
 import org.synyx.urlaubsverwaltung.core.application.domain.VacationType;
+import org.synyx.urlaubsverwaltung.core.period.DayLength;
 import org.synyx.urlaubsverwaltung.core.person.Person;
 import org.synyx.urlaubsverwaltung.core.sicknote.SickNote;
 
@@ -18,6 +18,8 @@ import org.synyx.urlaubsverwaltung.core.sicknote.SickNote;
 public class SickNoteConvertForm {
 
     private Person person;
+
+    private DayLength dayLength;
 
     private DateMidnight startDate;
 
@@ -36,6 +38,7 @@ public class SickNoteConvertForm {
     public SickNoteConvertForm(SickNote sickNote) {
 
         this.person = sickNote.getPerson();
+        this.dayLength = sickNote.getDayLength();
         this.startDate = sickNote.getStartDate();
         this.endDate = sickNote.getEndDate();
     }
@@ -49,6 +52,18 @@ public class SickNoteConvertForm {
     public void setPerson(Person person) {
 
         this.person = person;
+    }
+
+
+    public DayLength getDayLength() {
+
+        return dayLength;
+    }
+
+
+    public void setDayLength(DayLength dayLength) {
+
+        this.dayLength = dayLength;
     }
 
 
@@ -108,7 +123,7 @@ public class SickNoteConvertForm {
 
         applicationForLeave.setVacationType(vacationType);
 
-        applicationForLeave.setDayLength(DayLength.FULL);
+        applicationForLeave.setDayLength(dayLength);
         applicationForLeave.setStartDate(startDate);
         applicationForLeave.setEndDate(endDate);
 

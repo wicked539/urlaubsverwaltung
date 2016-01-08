@@ -1,6 +1,7 @@
 package org.synyx.urlaubsverwaltung.core.person;
 
-import com.google.common.base.MoreObjects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -9,14 +10,15 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import org.springframework.util.StringUtils;
 
-import org.synyx.urlaubsverwaltung.core.mail.MailNotification;
-import org.synyx.urlaubsverwaltung.security.Role;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 
 
 /**
@@ -32,6 +34,8 @@ public class Person extends AbstractPersistable<Integer> {
     private static final long serialVersionUID = 765672310978437L;
 
     private String loginName;
+
+    private String password;
 
     private String lastName;
 
@@ -122,6 +126,18 @@ public class Person extends AbstractPersistable<Integer> {
     }
 
 
+    public String getPassword() {
+
+        return password;
+    }
+
+
+    public void setPassword(String password) {
+
+        this.password = password;
+    }
+
+
     public byte[] getPrivateKey() {
 
         if (privateKey == null) {
@@ -164,13 +180,26 @@ public class Person extends AbstractPersistable<Integer> {
 
     public void setPermissions(Collection<Role> permissions) {
 
+        boolean inactiveRolePresent = permissions.stream()
+            .filter(permission -> permission.equals(Role.INACTIVE))
+            .findFirst()
+            .isPresent();
+
+        if (inactiveRolePresent && permissions.size() != 1) {
+            throw new IllegalArgumentException("Can not set inactive role and other role at the same time!");
+        }
+
         this.permissions = permissions;
     }
 
 
     public Collection<Role> getPermissions() {
 
-        return permissions;
+        if (permissions == null) {
+            return Collections.emptyList();
+        }
+
+        return Collections.unmodifiableCollection(permissions);
     }
 
 
@@ -180,19 +209,13 @@ public class Person extends AbstractPersistable<Integer> {
     }
 
 
-    public boolean isPrivilegedUser() {
-
-        return hasRole(Role.DEPARTMENT_HEAD) || hasRole(Role.BOSS) || hasRole(Role.OFFICE);
-    }
-
-
     public Collection<MailNotification> getNotifications() {
 
         if (notifications == null) {
-            notifications = new ArrayList<>();
+            notifications = Collections.emptyList();
         }
 
-        return notifications;
+        return Collections.unmodifiableCollection(notifications);
     }
 
 
@@ -218,18 +241,25 @@ public class Person extends AbstractPersistable<Integer> {
     }
 
 
+    public String getGravatarURL() {
+
+        if (StringUtils.hasText(this.email)) {
+            return GravatarUtil.createImgURL(this.email);
+        }
+
+        return "";
+    }
+
+
     @Override
     public String toString() {
 
-        MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
-
-        toStringHelper.add("id", getId());
-        toStringHelper.add("loginName", getLoginName());
-        toStringHelper.add("lastName", getLastName());
-        toStringHelper.add("firstName", getFirstName());
-        toStringHelper.add("email", getEmail());
-        toStringHelper.add("permissions", getPermissions());
-
-        return toStringHelper.toString();
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", getId())
+            .append("loginName", getLoginName())
+            .append("lastName", getLastName())
+            .append("firstName", getFirstName())
+            .append("email", getEmail())
+            .append("permissions", getPermissions())
+            .toString();
     }
 }
