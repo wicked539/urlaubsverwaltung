@@ -134,6 +134,49 @@
                 <label class="control-label col-md-3" for="members">
                     <spring:message code='department.members.staff'/>:
                 </label>
+
+
+                    <div class="col-md-9">
+                            <table cellspacing="0" class="department--members list-table sortable tablesorter">
+                                <tbody>
+                                    <c:forEach items="${persons}" var="person">
+                                        <c:set var="IS_MEMBER" value="${fn:contains(department.members, person)}"/>
+                                        <c:if test="${IS_MEMBER}">
+                                            <tr class="department--member">
+                                                <td class="department--member-image">
+                                                    <div class="gravatar gravatar--medium img-circle" data-gravatar="<c:out value='${person.gravatarURL}?d=mm&s=40'/>"></div>
+                                                </td>
+                                                <td class="department--member-info">
+                                                    <p><c:out value="${person.niceName}"/></p>
+                                                    <c:if test="${fn:contains(person.permissions, 'DEPARTMENT_HEAD')}">
+                                                        <span class="label label-info">Abteilungsleiter</span>
+                                                    </c:if>
+                                                    <c:if test="${fn:contains(person.permissions, 'SECOND_STAGE_AUTHORITY')}">
+                                                        <span class="label label-primary">Entgültige Freigabe</span>
+                                                    </c:if>
+                                                </td>
+                                                <td>
+                                                    <a class="fa-action negative pull-right hidden-xs" href="#modal-cancel-1" data-toggle="modal" data-title="Aus Abteilung entfernen" data-placement="bottom" data-original-title="" title="">
+                                                        <i class="fa fa-fw fa-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </c:if>
+                                    </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8 col-md-pull-4">
+            <div class="form-group">
+                <label class="control-label col-md-3">
+                    <spring:message code='department.members.staff'/>:
+                </label>
                 <div class="col-md-9">
                     <div class="department--members">
                         <c:forEach items="${persons}" var="person">
@@ -145,7 +188,7 @@
                                     <div class="gravatar gravatar--medium img-circle" data-gravatar="<c:out value='${person.gravatarURL}?d=mm&s=40'/>"></div>
                                 </div>
                                 <div class="department--member-assignment">
-                                    <p class="department--member-info">
+                                    <p>
                                         <c:out value="${person.niceName}"/>
                                     </p>
                                     <div class="checkbox">
@@ -155,12 +198,12 @@
                                         </label>
                                     </div>
                                     <c:if test="${fn:contains(person.permissions, 'DEPARTMENT_HEAD')}">
-                                    <div class="checkbox">
-                                        <label>
-                                            <form:checkbox path="departmentHeads" value="${person}"/>
-                                            <spring:message code="department.members.departmentHead"/>
-                                        </label>
-                                    </div>
+                                        <div class="checkbox">
+                                            <label>
+                                                <form:checkbox path="departmentHeads" value="${person}"/>
+                                                <spring:message code="department.members.departmentHead"/>
+                                            </label>
+                                        </div>
                                     </c:if>
                                     <c:if test="${fn:contains(person.permissions, 'SECOND_STAGE_AUTHORITY')}">
                                         <div class="checkbox">
